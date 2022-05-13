@@ -8,8 +8,16 @@ const char *regs[] = {
   "s8", "s9", "s10", "s11", "t3", "t4", "t5", "t6"
 };
 
+//-------------------- add by dingyawei,start.--------------------------------//
 void isa_reg_display() {
+  printf("regid   name:   hexvalue:       decvalue:\n");
+  for(int idx = 0; idx < 32; idx++){
+    printf("%d\t%s\t0x%lx\t\t%ld\n",check_reg_idx(idx),\
+                  regs[idx],cpu.gpr[idx],cpu.gpr[idx]);
+  }
+  printf("Non\tpc\t0x%lx\t\t%ld\n",cpu.pc,cpu.pc);
 }
+//-------------------- add by dingyawei,end.--------------------------------//
 
 word_t isa_reg_str2val(const char *s, bool *success) {
   return 0;

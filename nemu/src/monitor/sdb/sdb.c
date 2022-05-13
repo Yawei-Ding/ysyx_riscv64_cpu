@@ -4,10 +4,38 @@
 #include <readline/history.h>
 #include "sdb.h"
 
+
 static int is_batch_mode = false;
 
 void init_regex();
 void init_wp_pool();
+
+extern word_t vaddr_read(vaddr_t addr, int len);
+
+static int cmd_help(char *args);
+static int cmd_c(char *args);
+static int cmd_q(char *args);
+static int cmd_si(char *args);
+static int cmd_info(char *args);
+static int cmd_x(char *args);
+static int cmd_p(char *args);
+
+static struct {
+  const char *name;
+  const char *description;
+  int (*handler) (char *);
+} cmd_table [] = {
+  { "help", "Display informations about all supported commands", cmd_help },
+  { "c", "Continue the execution of the program", cmd_c },
+  { "q", "Exit NEMU", cmd_q },
+  { "si", "Step one instruction", cmd_si},
+  { "info", "Print register or watchpoint status", cmd_info},
+  { "x", "Print memory value ", cmd_x},
+  { "p", "Calculate the value of a regular expression", cmd_p},
+  /* TODO: Add more commands */
+};
+
+#define NR_CMD ARRLEN(cmd_table)
 
 /* We use the `readline' library to provide more flexibility to read from stdin. */
 static char* rl_gets() {
@@ -27,32 +55,6 @@ static char* rl_gets() {
   return line_read;
 }
 
-static int cmd_c(char *args) {
-  cpu_exec(-1);
-  return 0;
-}
-
-
-static int cmd_q(char *args) {
-  return -1;
-}
-
-static int cmd_help(char *args);
-
-static struct {
-  const char *name;
-  const char *description;
-  int (*handler) (char *);
-} cmd_table [] = {
-  { "help", "Display informations about all supported commands", cmd_help },
-  { "c", "Continue the execution of the program", cmd_c },
-  { "q", "Exit NEMU", cmd_q },
-
-  /* TODO: Add more commands */
-
-};
-
-#define NR_CMD ARRLEN(cmd_table)
 
 static int cmd_help(char *args) {
   /* extract the first argument */
@@ -76,6 +78,95 @@ static int cmd_help(char *args) {
   }
   return 0;
 }
+
+static int cmd_c(char *args) {
+  cpu_exec(-1);
+  return 0;
+}
+
+//-------------------- add by dingyawei,start.--------------------------------//
+
+static int cmd_q(char *args) {
+  nemu_state.state = NEMU_QUIT;
+  //printf("%d\n",nemu_state.state);
+  return -1;
+}
+
+static int cmd_si(char *args) {
+  /* extract the first argument */
+  char *arg = strtok(NULL, " ");
+  char *ptr = NULL;
+  uint64_t num = 0;
+
+  if (arg == NULL) {
+    //no argument given, step one!
+    cpu_exec(1);
+  }
+  else {
+    //Step n times,n is determined by *arg !
+    num = strtoul(arg,&ptr,10); 
+    if((num == 0) || ((arg+strlen(arg)) != ptr)){
+      printf("Check! Execlute times cannot be 0,or other non-numeric letters!\n");
+    }
+    else{
+      cpu_exec(num);
+    }
+  }
+
+  return 0;
+}
+
+static int cmd_info(char *args) {
+  if(strcmp(args,"r") == 0){
+    isa_reg_display();
+  }
+  else if (strcmp(args,"w") == 0){
+    printf("function is unavailable now, please wait for update later.");
+  }
+  else{
+    printf("check your input cmd!");
+  }
+
+  return 0;
+}
+
+static int cmd_x(char *args) {
+  char *argN = strtok(NULL, " ");
+  char *argEXPR = strtok(NULL, " ");
+  char *ptrN = NULL;
+  char *ptrEXPR = NULL;
+
+  /* extract the first argument:N. */
+  word_t N = strtoul(argN,&ptrN,10); 
+  /* extract the second argument:EXPR,means the start addr of memory. */
+  word_t EXPR = strtoul(argEXPR,&ptrEXPR,16); 
+
+  if(((argN+strlen(argN)) != ptrN) || ((argEXPR+strlen(argEXPR)) != ptrEXPR)){
+    printf("Check your inpur cmd,args can not be non-numeric letters!\n");
+  }
+
+  for(int i=0;i<N;i++){
+    word_t vaddr = EXPR+i*4;
+    printf("0x%lx:\t0x%08lx\n",vaddr,vaddr_read(vaddr,4));
+  }
+
+  return 0;
+}
+
+static int cmd_p(char *args) {
+  bool success;
+  word_t EXPR;
+  EXPR = expr(args, &success);
+  if(success){
+    printf("input expression == %ld\n",EXPR);
+  }
+  else{
+    printf("Error!Check your inpur expression!!\n");
+  }
+  return 0;
+}
+
+//-------------------- add by dingyawei,end.--------------------------------//
 
 void sdb_set_batch_mode() {
   is_batch_mode = true;

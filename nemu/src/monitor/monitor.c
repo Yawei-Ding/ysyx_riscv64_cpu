@@ -17,8 +17,8 @@ static void welcome() {
   Log("Build time: %s, %s", __TIME__, __DATE__);
   printf("Welcome to %s-NEMU!\n", ANSI_FMT(str(__GUEST_ISA__), ANSI_FG_YELLOW ANSI_BG_RED));
   printf("For help, type \"help\"\n");
-  Log("Exercise: Please remove me in the source code and compile NEMU again.");
-  assert(0);
+  //Log("Exercise: Please remove me in the source code and compile NEMU again.");
+  //assert(0);
 }
 
 #ifndef CONFIG_TARGET_AM
@@ -93,7 +93,7 @@ void init_monitor(int argc, char *argv[]) {
   init_rand();
 
   /* Open the log file. */
-  init_log(log_file);
+  init_log(log_file); // default: output log to stdout!
 
   /* Initialize memory. */
   init_mem();
