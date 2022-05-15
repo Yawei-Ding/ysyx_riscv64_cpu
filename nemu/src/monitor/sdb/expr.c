@@ -61,12 +61,36 @@ typedef struct token {
 static Token tokens[32] __attribute__((used)) = {};
 static int nr_token __attribute__((used))  = 0;
 
+char* getTokenInfo(Token *p){ //add by dingyawei. return the token info, used for printf!
+  static char TokenInfo[32];
+  switch (p->type)
+  {
+    case TK_NOTYPE: strcpy(TokenInfo," "); break;
+    case TK_L_PAR:  strcpy(TokenInfo,"("); break;
+    case TK_R_PAR:  strcpy(TokenInfo,")"); break;
+    case TK_MUL:    strcpy(TokenInfo,"*"); break;
+    case TK_DIV:    strcpy(TokenInfo,"/"); break;
+    case TK_PLUS:   strcpy(TokenInfo,"+"); break;
+    case TK_SUB:    strcpy(TokenInfo,"-"); break;
+    case TK_NUM:    strcpy(TokenInfo,p->str); break;
+  }
+  return TokenInfo;
+}
+
+
 static bool make_token(char *e) {
   int position = 0;
   int i;
   regmatch_t pmatch;
 
+  // clear last time tokens:
   nr_token = 0;
+  for(int i=0;i<32;i++){
+    tokens[i].type = 0;
+    for(int j=0;j<32;j++){
+      tokens[i].str[j] = '\0';
+    }
+  }
 
   while (e[position] != '\0') {
     /* Try all rules one by one. */
@@ -81,20 +105,16 @@ static bool make_token(char *e) {
 
         position += substr_len;
 
-        //-------------------- add by dingyawei,start.--------------------------------//
         switch (rules[i].token_type) {
           case TK_NOTYPE: 
             break; //do nothing!!
           case TK_NUM:  
-            strncpy(tokens[nr_token].str,substr_start,substr_len);//no break!!
-            printf("token ID = %d, token = %s\n",nr_token,tokens[nr_token].str);
+            strncpy(tokens[nr_token].str,substr_start,substr_len); // no break!!!!
           default: 
-            if(rules[i].token_type!=TK_NUM)
-              printf("token ID = %d, token = %c\n",nr_token,*substr_start);
             tokens[nr_token].type = rules[i].token_type;
-            nr_token++;
+            //printf("Make token function get info: token ID = %d, token = %s\n",nr_token,getTokenInfo(&tokens[nr_token]));
+            nr_token++; //if input is TK_NOTYPE, nr_token will not increase !!
         }
-        //-------------------- add by dingyawei,end.--------------------------------//
 
         break;
       }
@@ -106,126 +126,161 @@ static bool make_token(char *e) {
     }
   }
 
+  nr_token = nr_token -1 ; //remove the last nr_token++ 
   return true;
 }
 
-//-------------------- add by dingyawei,start.--------------------------------//
+//-------------------------------------------------------------------- add by dingyawei,start.--------------------------------------------------------------------------------//
 
-/*----------------------------------------------------
-check_parentheses 核心思想：从左往右统计括号个数。
- 1.任意时刻，左括号数<右括号数，语法错误，程序终止！
- 2.非p=q时刻，左括号数=右括号数，左右括号不匹配，返回false。
- 3.p=q时刻，左括号数=右括号数，左右括号匹配，返回true。
- 4. 程序中分了两个for循环，这是因为如果只有一个for循环，
-        那么永远不会检测到count_l < count_r这种情况！
-函数已经测试完毕，没有问题辣！
-----------------------------------------------------*/
-bool check_parentheses(Token *p,Token *q){
+/*需要检查start和end是否匹配括号,这里给出一些例子：
+a) (4+3*(2-1))    //匹配
+b)  4+3*(2-1)     //不匹配, start和end没有被同一个括号包围
+c) (4+3)*(2-1)    //不匹配, start和end不是同一个括号！
+d) (4+3))*((2-1)  //不匹配, 左括号和右括号数量一致,但是个错误的式子！
+e) (4+3))*(2-1)   //不匹配, 左括号和右括号数量都不一致！
+check_parentheses函数核心思想：从右往左统计括号个数。
+ 1.遍历全部token, 任意时刻, 如果左括号数>右括号数,说明是上面的例子d),assert(0);
+ 2.遍历全部token, 统计左括号和右括号数量,如果不等,说明是上面的例子e),return false;
+ 3.遍历全部token,左括号数=右括号数,但尚未遍历完毕,说明是上面的例子c),左右括号不匹配,return false;
+                左括号数=右括号数,且已遍历完毕,左右括号匹配,return true;
+*/
+bool check_parentheses(Token *start,Token *end){
   int count_l = 0;  //count for numbers of left  parentheses
   int count_r = 0;  //count for numbers of right parentheses
-  Token *start = p;
 
-  if(p->type == TK_L_PAR && q->type == TK_R_PAR){
-    for( ; p<=q; p++){
-      //printf("p:%p\tq:%p\tcount_l:%d\tcount_r:%d\tp->type:%d\n",p,q,count_l,count_r,p->type);
-      switch(p->type){
+  if(start->type == TK_L_PAR && end->type == TK_R_PAR){
+
+    //-------------------遍历排除例子d):---------------------//
+    for(Token *q=end ; start<=q; q--){
+      switch(q->type){
         case TK_L_PAR: count_l++; break;
         case TK_R_PAR: count_r++; break;
       }
-      if(count_l < count_r) {
+      //printf("p:%p\tq:%p\tcount_l:%d\tcount_r:%d\tp->type:%s\n",p,q,count_l,count_r,getTokenInfo(p));
+      if(count_l > count_r) {
         printf("Check your input ),bad expression!\n");
-        assert(0);// false !! bad expression!!
+        assert(0);
       }
     }
-    
-    for(p=start,count_l=0,count_r=0; p<=q; p++){
-      switch(p->type){
-        case TK_L_PAR: count_l++; break;
-        case TK_R_PAR: count_r++; break;
-      }
-      if(count_l == count_r){
-        if(p==q){
-          return true;
+    //-------------------排除例子e):---------------------//
+    if(count_l != count_r){ //注意,这里不能用assert,例如寻找主符号的函数设置mask时调用了这个函数 (1+(2+3)+4),那么会出assert!
+      //printf("Check your input, ( is not equal to )!\n");
+      return false;
+    }
+
+    //-----------------遍历排除例子c),以及确定是否有效:-------------------//
+    for(Token *q=end ; start<=q; q--){
+      switch(q->type){
+          case TK_L_PAR: count_l++; break;
+          case TK_R_PAR: count_r++; break;
         }
-        else{
-          return false;
+        //printf("p:%p\tq:%p\tcount_l:%d\tcount_r:%d\tp->type:%s\n",p,q,count_l,count_r,getTokenInfo(p));
+        if(count_l == count_r){
+          if(start==q){ //是否已经遍历完毕
+            //printf("check parentheses true\n");
+            return true;
+          }
+          else{
+            //printf("check parentheses false\n");
+            return false;
+          }
+      }
+    }
+  }
+  return false;
+}
+
+/*需要将一个式子,找到主符号,然后拆分成两个式子,通常情况下主符号是优先级最低的函数：
+a) (86*234)/((16*94))*(39/4)  // 主符号为 94)) * (39/4 这个"*"号！
+b) 3+2*3+(2*7+(33+244))       // 主符号为 *3+(2* 这个"+"号！
+c) (3+2)*3+2*7+(33+244)       // 主符号为 *7+(33+ 这个"+"号！
+
+find_main_op函数核心思想：从右往左寻找优先级最低的函数！
+ 1.遍历全部token,检查有多少括号
+ 2.遍历全部token, 给带括号及其内部的位置全部打上Mask!
+ 3.遍历全部无mask的token,从右往左寻找+-号
+ 4.遍历全部无mask的token,从右往左寻找x/号
+*/
+Token* find_main_op(Token *start,Token *end){
+
+  int count_l = 0;  //count for numbers of left  parentheses
+  int count_r = 0;  //count for numbers of right parentheses
+
+  // 1. 遍历全部token,检查有多少括号
+  for(Token *q=end ; start<=q; q--){
+    switch(q->type){
+      case TK_L_PAR: count_l++; break;
+      case TK_R_PAR: count_r++; break;
+    }
+  }
+  if(count_l != count_r){
+    printf("Find main opreator error! Check your input, ( is not equal to )!\n");
+    assert(0);
+  }
+
+  // 2. 从右到左遍历带括号的token,打上mask
+
+  int len = end -start + 1;
+  bool *mask = (bool *) malloc(len*sizeof(bool));
+
+  for(int i=0; i<len; i++){
+    mask[i] = false;
+  }
+
+  while(count_l != 0 || count_r !=0){
+    count_l = 0;
+    count_r = 0;
+    for(int i = len-1 ; i>=0 ; i--){
+      if(mask[i] == false && start[i].type == TK_R_PAR){ //找到了未mask的右括号
+        for(int j = i -1 ; j>=0 ; j--)
+          if(mask[j] == false && check_parentheses(start+j,start+i)){
+            //printf("token j ID = %d, token i ID = %d \n",j,i);
+            for(int k=j; k<=i ;k++){  //针对括号及其内部,全部打上mask
+              mask[k] = true;
+            } 
+            break;
+          }
+      }
+    }
+    for(int i = len-1 ; i>=0 ; i--){
+      if(mask[i] == false){
+        switch(start[i].type){
+          case TK_L_PAR: count_l++; break;
+          case TK_R_PAR: count_r++; break;
         }
       }
     }
   }
-    return false;
-}
 
-Token* find_plus_sub_operator(Token *start,Token *end)
-{
-  Token *p,*q;
-  for(p=start,q=end; p<=q; q--){ //寻找最右侧的+-号
-    if(q->type == TK_PLUS || q->type == TK_SUB){
-      printf("主符号是%d,位置在:%ld\n",q->type,q-start);
-      return q;
+  // 打印mask信息
+  // for(Token *p=start;p<=end;p++){
+  //   printf("find_main_op token = %s, mask = %d \n",getTokenInfo(p),mask[p-start]);
+  // }
+
+  // 3.利用mask遍历token,寻找+-号
+  for(int i = len-1 ; i>=0 ; i--){
+    if(mask[i] == false){
+       if(start[i].type == TK_PLUS || start[i].type == TK_SUB){
+        return start+i;
+       }
     }
-    else if(q->type == TK_R_PAR){//右括号，直接找到对应的左括号
-      for(Token *t=p;t<=q;t++){
-        if(check_parentheses(t,q)){
-          printf("左括号的位置:%ld,右括号的位置:%ld\n",t-start,q-start);
-          if(t!=p){   //如果括号的位置不是最左边，那么直接移动q到左括号的左边，跳过括号！
-            q = t;
-          }
-          else{    //如果括号的位置是最左边,考虑如下例子：(3+2)*3+2*7,那么直接跳过整个括号，重新查找*3+2*7
-            return find_plus_sub_operator(q+1,end);
-          }
-          break;
-        }    
-      }
-    }  
   }
-  return NULL;
-}
 
-
-Token* find_mul_div_operator(Token *start,Token *end)
-{
-  Token *p,*q;
-  for(p=start,q=end; p<=q; q--){ //没有+-号,寻找最右侧的*/号
-    if(q->type == TK_MUL || q->type == TK_DIV){
-      printf("主符号是%d,位置在:%ld\n",q->type,q-p);
-      return q; 
+  // 4.利用mask遍历token,寻找+-号
+  for(int i = len-1 ; i>=0 ; i--){
+    if(mask[i] == false){
+       if(start[i].type == TK_MUL || start[i].type == TK_DIV){
+        return start+i;
+       }
     }
-    else if(q->type == TK_R_PAR){//右括号，直接找到对应的左括号，移动到左括号的左边！
-      for(Token *t=p;t<=q;t++){
-        if(check_parentheses(t,q)){
-          printf("左括号的位置:%ld,右括号的位置:%ld\n",t-start,q-start);
-          if(t!=p){   //如果括号的位置不是最左边，那么直接移动q到左括号的左边，跳过括号！
-            q = t;
-          }
-          else{    //理论上永远不会出现这种情况。
-            printf("find_mul_div_operator error:%ld\n",q-p);
-            return NULL;
-          }
-          break;
-        }    
-      }
-    }  
   }
-  printf("find_mul_div_operator error:%ld\n",q-p);
+  
+  free(mask);
   return NULL;
 }
-
-//核心思想：从右往左，找优先级最低的函数！！
-Token* find_main_operator(Token *start,Token *end){
-
-  Token* main_operator = find_plus_sub_operator(start,end);
-  if(main_operator!=NULL)
-    return main_operator;
-  main_operator = find_mul_div_operator(start,end);
-  if(main_operator!=NULL)
-    return main_operator;
-
-  return NULL;
-}
-
 
 uint32_t eval(Token *p,Token *q){
+
   if (p > q) {
     assert(0); //error! end the program!
   }
@@ -235,15 +290,30 @@ uint32_t eval(Token *p,Token *q){
   }
   else if (check_parentheses(p, q) == true) {
     return eval(p + 1, q - 1);
-    return 0;
   }
   else {
-    Token *op = find_main_operator(p,q);
+    Token *op = find_main_op(p,q);
+    if(op == NULL){
+      return 0;
+    }
 
     uint32_t val1 = eval(p, op - 1);
     uint32_t val2 = eval(op + 1, q);
 
-    printf("val1=%d,val2=%d,op->type=%d\n",val1,val2,op->type);
+    // 打印分隔开的两个式子信息：
+
+    printf("expr1=");
+    for(Token *i=p;i<=op-1;i++){
+      printf("%s",getTokenInfo(i));
+    }
+    printf(",val1=%d,  ",val1);
+    printf("  op=%s,  ",getTokenInfo(op));
+    printf("expr2=");
+    for(Token *i=op+1;i<=q;i++){
+      printf("%s",getTokenInfo(i));
+    }
+    printf(",val2=%d\n",val2);
+
 
     switch (op->type) {
       case TK_PLUS: return val1 + val2;
@@ -252,18 +322,22 @@ uint32_t eval(Token *p,Token *q){
       case TK_DIV:  return val1 / val2;
       default: assert(0);//error! end the program!
     }
-
   }
+
+  return 0;
 }
 
-//-------------------- add by dingyawei,end.--------------------------------//
+//-------------------------------------------------------------------- add by dingyawei,end.--------------------------------------------------------------------------------//
 
 word_t expr(char *e, bool *success) {
   if (!make_token(e)) {
     *success = false;
     return 0;
   }
-
+  //Token *op = find_main_op(tokens,tokens+nr_token);
+  //check_parentheses(tokens,tokens+nr_token);
+  //printf("find_main_op token ID = %ld, token = %s \n",op-tokens,getTokenInfo(op));
   *success = true;
-  return eval(tokens,tokens+nr_token-1);
+  return eval(tokens,tokens+nr_token);
+  return 0;
 }

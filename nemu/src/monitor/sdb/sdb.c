@@ -142,7 +142,7 @@ static int cmd_x(char *args) {
   word_t EXPR = strtoul(argEXPR,&ptrEXPR,16); 
 
   if(((argN+strlen(argN)) != ptrN) || ((argEXPR+strlen(argEXPR)) != ptrEXPR)){
-    printf("Check your inpur cmd,args can not be non-numeric letters!\n");
+    printf("Check your input cmd,args can not be non-numeric letters!\n");
   }
 
   for(int i=0;i<N;i++){
