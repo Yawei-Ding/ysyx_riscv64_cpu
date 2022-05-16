@@ -5,31 +5,49 @@
  */
 #include <regex.h>
 
+word_t paddr_read(paddr_t addr, int len);
+
 enum {
   TK_NOTYPE = 256,
   TK_L_PAR,
   TK_R_PAR,
+  TK_NEG,         //负数
+  TK_NEG_OR_SUB,  //负数或者减法
+  TK_DERE,        //指针
+  TK_DERE_OR_MUL, //指针或者乘法
+  TK_REG,         //寄存器
   TK_MUL,
   TK_DIV,
+  TK_REM,         //取余数
   TK_PLUS,
   TK_SUB,
-  TK_NUM,
-  //TK_EQ,
+  TK_EQ,
+  TK_NEQ,
+  TK_AND,
+  TK_OR,
+  TK_HEX,
+  TK_NUM
 };
 
 static struct rule {
   const char *regex;
   int token_type;
 } rules[] = {
-  {" +", TK_NOTYPE},    // spaces,+代表匹配1次或多次
-  {"\\(", TK_L_PAR},    // left parentheses
-  {"\\)", TK_R_PAR},    // right parentheses
-  {"\\*", TK_MUL},      // mul
-  {"\\/", TK_DIV},      // div
-  {"\\+", TK_PLUS},     // plus
-  {"\\-", TK_SUB},      // sub
+  {" +", TK_NOTYPE},      // spaces,+代表匹配1次或多次
+  {"\\(", TK_L_PAR},      // left parentheses
+  {"\\)", TK_R_PAR},      // right parentheses
+  {"-",TK_NEG_OR_SUB},    //负数 或者 减法,在make token时会分裂
+  {"\\*",TK_DERE_OR_MUL}, //指针 或者 乘法,在make token时会分裂
+  {"\\$[\\$rsgtap][0-9apc][0-1]?",TK_REG},
+  {"/", TK_DIV},          // div
+  {"%",TK_REM},
+  {"\\+", TK_PLUS},       // plus
+  {"==", TK_EQ},          // equal
+  {"!=", TK_NEQ},         // not equal
+  {"&&", TK_AND},
+  {"\\|\\|", TK_OR},
+  {"0[xX][0-9a-fA-F]+", TK_HEX},   // hex num 先对比hex num,防止0x的0被识别成num
   {"[0-9]+", TK_NUM},   // num
-//{"==", TK_EQ},        // equal
 };
 
 #define NR_REGEX ARRLEN(rules)
@@ -61,22 +79,52 @@ typedef struct token {
 static Token tokens[32] __attribute__((used)) = {};
 static int nr_token __attribute__((used))  = 0;
 
-char* getTokenInfo(Token *p){ //add by dingyawei. return the token info, used for printf!
+#define TEXTON  1
+#define TEXTOFF 0
+char* getTokenInfo(Token *p,int onoff){ //add by dingyawei. return the token info, used for printf!
   static char TokenInfo[32];
   switch (p->type)
   {
     case TK_NOTYPE: strcpy(TokenInfo," "); break;
     case TK_L_PAR:  strcpy(TokenInfo,"("); break;
     case TK_R_PAR:  strcpy(TokenInfo,")"); break;
-    case TK_MUL:    strcpy(TokenInfo,"*"); break;
+    case TK_NEG:    
+      if(onoff == TEXTON)
+        strcpy(TokenInfo,"-(负号)"); 
+      else
+        strcpy(TokenInfo,"-"); 
+      break;
+    case TK_DERE:
+      if(onoff == TEXTON)
+        strcpy(TokenInfo,"*(指针)");
+      else
+        strcpy(TokenInfo,"*"); 
+      break;
+    case TK_MUL:
+      if(onoff == TEXTON)
+        strcpy(TokenInfo,"*(乘法)");
+      else
+        strcpy(TokenInfo,"*"); 
+      break;
     case TK_DIV:    strcpy(TokenInfo,"/"); break;
+    case TK_REM:    strcpy(TokenInfo,"%"); break;
     case TK_PLUS:   strcpy(TokenInfo,"+"); break;
-    case TK_SUB:    strcpy(TokenInfo,"-"); break;
+    case TK_SUB:
+      if(onoff == TEXTON)
+        strcpy(TokenInfo,"-(减号)"); 
+      else
+        strcpy(TokenInfo,"-"); 
+      break;
+    case TK_EQ:     strcpy(TokenInfo,"=="); break;
+    case TK_NEQ:    strcpy(TokenInfo,"!="); break;
+    case TK_AND:    strcpy(TokenInfo,"&&"); break;
+    case TK_OR:     strcpy(TokenInfo,"||"); break;
+    case TK_REG:    strcpy(TokenInfo,p->str); break;
+    case TK_HEX:    strcpy(TokenInfo,p->str); break;
     case TK_NUM:    strcpy(TokenInfo,p->str); break;
   }
   return TokenInfo;
 }
-
 
 static bool make_token(char *e) {
   int position = 0;
@@ -107,13 +155,39 @@ static bool make_token(char *e) {
 
         switch (rules[i].token_type) {
           case TK_NOTYPE: 
-            break; //do nothing!!
-          case TK_NUM:  
-            strncpy(tokens[nr_token].str,substr_start,substr_len); // no break!!!!
-          default: 
+            break; //do nothing,and break!!!
+          case TK_NEG_OR_SUB: 
+            //是减号的条件: 第一个字符; 非第一个字符,且前一个字符不是num、hexnum、)、$reg
+            if( nr_token==0 || (nr_token>0 && tokens[nr_token-1].type != TK_HEX && tokens[nr_token-1].type != TK_NUM 
+                                        && tokens[nr_token-1].type != TK_R_PAR && tokens[nr_token-1].type != TK_REG ))
+              tokens[nr_token].type = TK_NEG;
+            else{
+              tokens[nr_token].type = TK_SUB;
+            }
+            break;
+          case TK_DERE_OR_MUL:
+            //是取指针的条件: 第一个字符; 非第一个字符,且前一个字符不是num、hexnum、)、$reg
+            if( nr_token==0 || (nr_token>0 && tokens[nr_token-1].type != TK_HEX && tokens[nr_token-1].type != TK_NUM 
+                                        && tokens[nr_token-1].type != TK_R_PAR && tokens[nr_token-1].type != TK_REG ))
+              tokens[nr_token].type = TK_DERE;
+            else{
+              tokens[nr_token].type = TK_MUL;
+            }
+            break;
+          case TK_REG:
+            strncpy(tokens[nr_token].str,substr_start+1,substr_len-1); //remove the first $.
             tokens[nr_token].type = rules[i].token_type;
-            //printf("Make token function get info: token ID = %d, token = %s\n",nr_token,getTokenInfo(&tokens[nr_token]));
-            nr_token++; //if input is TK_NOTYPE, nr_token will not increase !!
+            break;
+          case TK_HEX:  // no breaks!
+          case TK_NUM:  // no breaks!
+            strncpy(tokens[nr_token].str,substr_start,substr_len);
+          default:
+            tokens[nr_token].type = rules[i].token_type;
+        }
+        
+        if(rules[i].token_type != TK_NOTYPE){
+          printf("Make token function get info: token ID = %d, token = %s\n",nr_token,getTokenInfo(&tokens[nr_token],TEXTON));
+          nr_token++; //if input is TK_NOTYPE, nr_token will not increase !!
         }
 
         break;
@@ -156,7 +230,7 @@ bool check_parentheses(Token *start,Token *end){
         case TK_L_PAR: count_l++; break;
         case TK_R_PAR: count_r++; break;
       }
-      //printf("p:%p\tq:%p\tcount_l:%d\tcount_r:%d\tp->type:%s\n",p,q,count_l,count_r,getTokenInfo(p));
+      //printf("p:%p\tq:%p\tcount_l:%d\tcount_r:%d\tp->type:%s\n",p,q,count_l,count_r,getTokenInfo(p,TEXTON));
       if(count_l > count_r) {
         printf("Check your input ),bad expression!\n");
         assert(0);
@@ -174,7 +248,7 @@ bool check_parentheses(Token *start,Token *end){
           case TK_L_PAR: count_l++; break;
           case TK_R_PAR: count_r++; break;
         }
-        //printf("p:%p\tq:%p\tcount_l:%d\tcount_r:%d\tp->type:%s\n",p,q,count_l,count_r,getTokenInfo(p));
+        //printf("p:%p\tq:%p\tcount_l:%d\tcount_r:%d\tp->type:%s\n",p,q,count_l,count_r,getTokenInfo(p,TEXTON));
         if(count_l == count_r){
           if(start==q){ //是否已经遍历完毕
             //printf("check parentheses true\n");
@@ -198,9 +272,45 @@ c) (3+2)*3+2*7+(33+244)       // 主符号为 *7+(33+ 这个"+"号！
 find_main_op函数核心思想：从右往左寻找优先级最低的函数！
  1.遍历全部token,检查有多少括号
  2.遍历全部token, 给带括号及其内部的位置全部打上Mask!
- 3.遍历全部无mask的token,从右往左寻找+-号
- 4.遍历全部无mask的token,从右往左寻找x/号
+ 3.遍历全部无mask的token,从右往左依次寻找匹配运算符。
 */
+
+#define MIN_PRI 1 
+#define MAX_PRI 6
+bool op_match(int tokentype,int priority){
+  switch(priority){
+    case 0: // ()
+      if(tokentype == TK_L_PAR || tokentype == TK_R_PAR)
+        return true;
+      break;
+    case 1: // -(负数) *(指针)
+      if(tokentype == TK_NEG || tokentype == TK_DERE)
+        return true;
+      break;
+    case 2: // *(乘号) /(除号) %(取余)
+      if(tokentype == TK_MUL || tokentype == TK_DIV ||tokentype == TK_REM )
+        return true;
+      break;
+    case 3: // + -(减法)
+      if(tokentype == TK_PLUS || tokentype == TK_SUB)
+        return true;
+      break;
+    case 4: // == !=
+      if(tokentype == TK_EQ || tokentype == TK_NEQ)
+        return true;
+      break;
+    case 5: // &&
+      if(tokentype == TK_AND)
+        return true;
+      break;
+    case 6: // ||
+      if(tokentype == TK_OR)
+        return true;
+      break;
+  }
+  return false;
+}
+
 Token* find_main_op(Token *start,Token *end){
 
   int count_l = 0;  //count for numbers of left  parentheses
@@ -254,39 +364,40 @@ Token* find_main_op(Token *start,Token *end){
 
   // 打印mask信息
   // for(Token *p=start;p<=end;p++){
-  //   printf("find_main_op token = %s, mask = %d \n",getTokenInfo(p),mask[p-start]);
+  //   printf("find_main_op token = %s, mask = %d \n",getTokenInfo(p,TEXTON),mask[p-start]);
   // }
 
-  // 3.利用mask遍历token,寻找+-号
-  for(int i = len-1 ; i>=0 ; i--){
-    if(mask[i] == false){
-       if(start[i].type == TK_PLUS || start[i].type == TK_SUB){
+  // 3.利用mask遍历token,寻找优先级最高的符号
+  for(int priority = MAX_PRI; priority >= MIN_PRI ; priority--){
+    for(int i = len-1 ; i>=0 ; i--){
+      if( !mask[i] && op_match(start[i].type,priority)){
         return start+i;
-       }
+      }
     }
   }
 
-  // 4.利用mask遍历token,寻找+-号
-  for(int i = len-1 ; i>=0 ; i--){
-    if(mask[i] == false){
-       if(start[i].type == TK_MUL || start[i].type == TK_DIV){
-        return start+i;
-       }
-    }
-  }
-  
   free(mask);
   return NULL;
 }
 
-uint32_t eval(Token *p,Token *q){
+word_t eval(Token *p,Token *q){
 
   if (p > q) {
     assert(0); //error! end the program!
   }
-  else if (p == q) {
-    assert(p->type == TK_NUM); //This single token should be a number!
-    return ((uint32_t)strtoul(p->str,NULL,10));
+  else if (p == q) { //single token
+    word_t reg;
+    switch(p->type){
+      case TK_HEX: return strtoul(p->str,NULL,16);
+      case TK_NUM: return strtoul(p->str,NULL,10);
+      case TK_REG: 
+        if(isa_reg_str2val(p->str,&reg)) //no break!;
+          return reg;
+        else
+          printf("reg read error!");
+      default:
+        assert(0); //This single token should be a number or a reg!
+    }
   }
   else if (check_parentheses(p, q) == true) {
     return eval(p + 1, q - 1);
@@ -294,33 +405,39 @@ uint32_t eval(Token *p,Token *q){
   else {
     Token *op = find_main_op(p,q);
     if(op == NULL){
-      return 0;
+      assert(0);
     }
-
-    uint32_t val1 = eval(p, op - 1);
-    uint32_t val2 = eval(op + 1, q);
-
-    // 打印分隔开的两个式子信息：
-
-    printf("expr1=");
-    for(Token *i=p;i<=op-1;i++){
-      printf("%s",getTokenInfo(i));
+    else if(op->type == TK_DERE){  // 指针
+      word_t paddr = eval(op + 1, q);
+      return paddr_read(paddr,8);
     }
-    printf(",val1=%d,  ",val1);
-    printf("  op=%s,  ",getTokenInfo(op));
-    printf("expr2=");
-    for(Token *i=op+1;i<=q;i++){
-      printf("%s",getTokenInfo(i));
-    }
-    printf(",val2=%d\n",val2);
+    else{
+      word_t val1 = eval(p, op - 1);
+      word_t val2 = eval(op + 1, q);
 
+      // printf("-----------expr1 = ");
+      // for(Token *i=p;i<=op-1;i++){
+      //   printf("%s",getTokenInfo(i,TEXTOFF));
+      // }
+      // printf("=%ld, main operator is %s, ",val1,getTokenInfo(op,TEXTON));
+      // printf("expr2 = ");
+      // for(Token *i=op+1;i<=q;i++){
+      //   printf("%s",getTokenInfo(i,TEXTOFF));
+      // }
+      // printf("=%ld-----------\n",val2);
 
-    switch (op->type) {
-      case TK_PLUS: return val1 + val2;
-      case TK_SUB:  return val1 - val2;
-      case TK_MUL:  return val1 * val2;
-      case TK_DIV:  return val1 / val2;
-      default: assert(0);//error! end the program!
+      switch (op->type) {
+        case TK_MUL:  return val1 * val2;
+        case TK_DIV:  return val1 / val2;
+        case TK_REM:  return val1 % val2;
+        case TK_PLUS: return val1 + val2;
+        case TK_SUB:  return val1 - val2;
+        case TK_EQ:   return val1 == val2;
+        case TK_NEQ:  return val1 != val2;
+        case TK_AND:  return val1 && val2;
+        case TK_OR:   return val1 || val2;
+        default: assert(0);//error! end the program!
+      }
     }
   }
 
@@ -334,10 +451,10 @@ word_t expr(char *e, bool *success) {
     *success = false;
     return 0;
   }
+  *success = true;
+
   //Token *op = find_main_op(tokens,tokens+nr_token);
   //check_parentheses(tokens,tokens+nr_token);
-  //printf("find_main_op token ID = %ld, token = %s \n",op-tokens,getTokenInfo(op));
-  *success = true;
+  //printf("The main operator is %s , location = %ld\n",getTokenInfo(op,TEXTON),op-tokens);
   return eval(tokens,tokens+nr_token);
-  return 0;
 }

@@ -10,7 +10,7 @@ static int is_batch_mode = false;
 void init_regex();
 void init_wp_pool();
 
-extern word_t vaddr_read(vaddr_t addr, int len);
+extern word_t paddr_read(paddr_t addr, int len);
 
 static int cmd_help(char *args);
 static int cmd_c(char *args);
@@ -146,8 +146,8 @@ static int cmd_x(char *args) {
   }
 
   for(int i=0;i<N;i++){
-    word_t vaddr = EXPR+i*4;
-    printf("0x%lx:\t0x%08lx\n",vaddr,vaddr_read(vaddr,4));
+    word_t paddr = EXPR+i*8;
+    printf("0x%lx:\t0x%016lx\n",paddr,paddr_read(paddr,8));
   }
 
   return 0;

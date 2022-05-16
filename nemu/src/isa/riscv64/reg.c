@@ -19,6 +19,16 @@ void isa_reg_display() {
 }
 //-------------------- add by dingyawei,end.--------------------------------//
 
-word_t isa_reg_str2val(const char *s, bool *success) {
-  return 0;
+bool isa_reg_str2val(const char *s, word_t *reg) {
+  if(strcmp(s,"pc") == 0){
+    *reg = cpu.pc;
+    return true;
+  }
+  for(int idx = 0; idx < 32; idx++){
+    if(strcmp(s,regs[idx]) == 0){
+      *reg = cpu.gpr[idx];
+      return true;
+    }
+  }
+  return false;
 }
