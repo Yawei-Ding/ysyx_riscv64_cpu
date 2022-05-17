@@ -16,27 +16,24 @@ int main(int argc, char *argv[]) {
 #endif
 
   //-------------------- test for 正则表达式计算 start------------------
-  char buffer[65536];
-  FILE *fp = fopen("/home/dingyawei/ysyx-workbench/nemu/tools/gen-expr/input.txt", "r");
-  assert(fp != NULL);
-  
-  init_sdb();
-
-  while(fgets(buffer,65536,fp)!=NULL){
-    bool success = true;
-    word_t codeanswer;
-    char *fileanswer = strtok(buffer, " "); // 第一个空格的位置区分文件中的输出值
-    char *expression = strtok(NULL, "\n");        // 表达式的起始地址
-    codeanswer = expr(expression, &success);
-    if(success)
-      printf("expr = %s, fileanswer = %s, codeanswer = %ld\n",expression,fileanswer,codeanswer);
-    else
-      printf("test error!");
-  }
-  
-  fclose(fp); 
-
+  // char buffer[65536];
+  // FILE *fp = fopen("/home/dingyawei/ysyx-workbench/nemu/tools/gen-expr/input.txt", "r");
+  // assert(fp != NULL);
+  // init_sdb();
+  // while(fgets(buffer,65536,fp)!=NULL){
+  //   bool success = true;
+  //   word_t codeanswer;
+  //   char *fileanswer = strtok(buffer, " "); // 第一个空格的位置区分文件中的输出值
+  //   char *expression = strtok(NULL, "\n");        // 表达式的起始地址
+  //   codeanswer = expr(expression, &success);
+  //   if(success)
+  //     printf("expr = %s, fileanswer = %s, codeanswer = %ld\n",expression,fileanswer,codeanswer);
+  //   else
+  //     printf("test error!");
+  // }
+  // fclose(fp); 
   //-------------------- test for 正则表达式计算 end--------------------
+  
   /* Start engine. */
   engine_start();
 

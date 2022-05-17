@@ -186,7 +186,7 @@ static bool make_token(char *e) {
         }
         
         if(rules[i].token_type != TK_NOTYPE){
-          printf("Make token function get info: token ID = %d, token = %s\n",nr_token,getTokenInfo(&tokens[nr_token],TEXTON));
+          //printf("Make token function get info: token ID = %d, token = %s\n",nr_token,getTokenInfo(&tokens[nr_token],TEXTON));
           nr_token++; //if input is TK_NOTYPE, nr_token will not increase !!
         }
 
@@ -274,7 +274,6 @@ find_main_op函数核心思想：从右往左寻找优先级最低的函数！
  2.遍历全部token, 给带括号及其内部的位置全部打上Mask!
  3.遍历全部无mask的token,从右往左依次寻找匹配运算符。
 */
-
 #define MIN_PRI 1 
 #define MAX_PRI 6
 bool op_match(int tokentype,int priority){
@@ -381,7 +380,6 @@ Token* find_main_op(Token *start,Token *end){
 }
 
 word_t eval(Token *p,Token *q){
-
   if (p > q) {
     assert(0); //error! end the program!
   }
@@ -440,19 +438,16 @@ word_t eval(Token *p,Token *q){
       }
     }
   }
-
   return 0;
 }
 
 //-------------------------------------------------------------------- add by dingyawei,end.--------------------------------------------------------------------------------//
-
 word_t expr(char *e, bool *success) {
   if (!make_token(e)) {
     *success = false;
     return 0;
   }
   *success = true;
-
   //Token *op = find_main_op(tokens,tokens+nr_token);
   //check_parentheses(tokens,tokens+nr_token);
   //printf("The main operator is %s , location = %ld\n",getTokenInfo(op,TEXTON),op-tokens);

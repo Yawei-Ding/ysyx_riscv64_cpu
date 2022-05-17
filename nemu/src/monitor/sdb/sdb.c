@@ -10,7 +10,7 @@ static int is_batch_mode = false;
 void init_regex();
 void init_wp_pool();
 
-extern word_t paddr_read(paddr_t addr, int len);
+word_t paddr_read(paddr_t addr, int len);
 
 static int cmd_help(char *args);
 static int cmd_c(char *args);
@@ -19,6 +19,12 @@ static int cmd_si(char *args);
 static int cmd_info(char *args);
 static int cmd_x(char *args);
 static int cmd_p(char *args);
+static int cmd_w(char *args);
+static int cmd_d(char *args);
+bool new_wp(char *args);
+bool free_wp(int delNO);
+void wp_display();
+int getWPcount();
 
 static struct {
   const char *name;
@@ -32,6 +38,8 @@ static struct {
   { "info", "Print register or watchpoint status", cmd_info},
   { "x", "Print memory value ", cmd_x},
   { "p", "Calculate the value of a regular expression", cmd_p},
+  { "w", "Create a new watch point with the expression", cmd_w},
+  { "d", "Delete a watch point from link list.", cmd_d},
   /* TODO: Add more commands */
 };
 
@@ -54,7 +62,6 @@ static char* rl_gets() {
 
   return line_read;
 }
-
 
 static int cmd_help(char *args) {
   /* extract the first argument */
@@ -121,10 +128,10 @@ static int cmd_info(char *args) {
     isa_reg_display();
   }
   else if (strcmp(args,"w") == 0){
-    printf("function is unavailable now, please wait for update later.");
+    wp_display(0);
   }
   else{
-    printf("check your input cmd!");
+    printf("check your input cmd,this is not support!!\n");
   }
 
   return 0;
@@ -162,6 +169,20 @@ static int cmd_p(char *args) {
   }
   else{
     printf("Error!Check your inpur expression!!\n");
+  }
+  return 0;
+}
+
+static int cmd_w(char *args) {
+  if(!new_wp(args)){
+    printf("fail to add watch point.check your watch point expression.");
+  }
+  return 0;
+}
+
+static int cmd_d(char *args) {
+  if(!free_wp(strtoul(args,NULL,10))){
+    printf("del wp failure\n");
   }
   return 0;
 }
@@ -215,5 +236,5 @@ void init_sdb() {
   init_regex();
 
   /* Initialize the watchpoint pool. */
-  init_wp_pool();
+  //init_wp_pool(); //remove by dingyawei.
 }
