@@ -24,7 +24,7 @@ static int cmd_d(char *args);
 bool new_wp(char *args);
 bool free_wp(int delNO);
 void wp_display();
-int getWPcount();
+
 
 static struct {
   const char *name;
