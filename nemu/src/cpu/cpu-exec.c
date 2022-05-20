@@ -25,8 +25,10 @@ static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
   if (g_print_step) { IFDEF(CONFIG_ITRACE, puts(_this->logbuf)); }
   IFDEF(CONFIG_DIFFTEST, difftest_step(_this->pc, dnpc));
 #ifdef CONFIG_WATCHPOINT
-  WP_check_update();
-  nemu_state.state = NEMU_STOP;
+  if(WP_check_update() && nemu_state.state == NEMU_RUNNING){
+    nemu_state.state = NEMU_STOP;
+    printf("program is pause now.\n");
+  }
 #endif
 }
 
@@ -95,6 +97,8 @@ void cpu_exec(uint64_t n) {
   uint64_t timer_start = get_time();
 
   execute(n);
+
+  //printf("nemu_state.state == %d\n",nemu_state.state);
 
   uint64_t timer_end = get_time();
   g_timer += timer_end - timer_start;

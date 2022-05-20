@@ -41,7 +41,7 @@ bool new_wp(char *args) {
     
     // 3.update count for wp.
     wp_count = wp_count + 1;
-    printf("new watch point %d: expr = %s,value = %ld\n",wp_count,newwp->expr,newwp->newval);
+    printf("new watch point %d: expr = %s,value = 0x%lx\n",wp_count,newwp->expr,newwp->newval);
   }
 
   return success;
@@ -72,7 +72,7 @@ bool free_wp(int delNO){
 
   // 3. delete and free delwp.
   wp_count = wp_count - 1;
-  printf("remove watch point ID = %d,expr = %s,value = %ld\n",delNO,delwp->expr,delwp->newval);
+  printf("remove watch point ID = %d,expr = %s,value = 0x%lx\n",delNO,delwp->expr,delwp->newval);
   free(delwp->expr);
   free(delwp);
   return true;
@@ -87,7 +87,7 @@ bool WP_check_update() {
     p->newval = expr(p->expr,&nothing);
     if(p->oldval != p->newval){
       update = true;
-      printf("watch point %d has update:expr = %s,old value = %ld,new value = %ld\n",i,p->expr,p->oldval,p->newval);
+      printf("watch point %d has update:expr = %s, old value = 0x%lx, new value = 0x%lx, ",i,p->expr,p->oldval,p->newval);
     }
     p = p->next;
   }
@@ -97,7 +97,7 @@ bool WP_check_update() {
 void wp_display(){
   WP *p=head;
   for(int i=1; i<= wp_count; i++,p = p->next){
-    printf("watch point %d: expr = %s,old value = %ld,new value = %ld\n",i,p->expr,p->oldval,p->newval);
+    printf("watch point %d: expr = %s, old value = 0x%lx, new value = 0x%lx\n",i,p->expr,p->oldval,p->newval);
   }
 }
 
