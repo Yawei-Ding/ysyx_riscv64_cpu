@@ -1,0 +1,1 @@
+`define TYPE_I 7'b0010011

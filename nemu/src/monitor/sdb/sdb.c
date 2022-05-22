@@ -8,7 +8,9 @@
 static int is_batch_mode = false;
 
 void init_regex();
-void init_wp_pool();
+bool new_wp(char *args);
+bool free_wp(int delNO);
+void wp_display();
 
 word_t paddr_read(paddr_t addr, int len);
 
@@ -21,9 +23,6 @@ static int cmd_x(char *args);
 static int cmd_p(char *args);
 static int cmd_w(char *args);
 static int cmd_d(char *args);
-bool new_wp(char *args);
-bool free_wp(int delNO);
-void wp_display();
 
 
 static struct {

@@ -1,29 +1,64 @@
-#include <nvboard.h>
-#include <Vtop.h>
+#include "Vtop.h"
+#include "Vtop__Dpi.h"
+#include "verilated.h"
+#include "verilated_vcd_c.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <assert.h>
 
-static TOP_NAME dut;
+#define MEM_START 0x80000000
+#define MEM_END   0x87ffffff
 
-void nvboard_bind_all_pins(Vtop* top);
+uint32_t memory[10] = {0xffc10113,0x100073,0x100073,0x100073,0x100073};
 
-static void single_cycle() {
-  dut.clk = 0; dut.eval();
-  dut.clk = 1; dut.eval();
-}
-
-static void reset(int n) {
-  dut.rst = 1;
-  while (n -- > 0) single_cycle();
-  dut.rst = 0;
-}
-
-int main() 
+void step_and_dump_wave(VerilatedContext* contextp,VerilatedVcdC* tfp,Vtop* top)
 {
-    nvboard_bind_all_pins(&dut);
-    nvboard_init();
-	reset(10);  // 复位10个周期
-    while(1) 
-    {
-        nvboard_update();
-        single_cycle();
+  top->eval();
+  contextp->timeInc(1);
+  tfp->dump(contextp->time());
+}
+
+uint32_t pmem_read(uint64_t addr) {
+  addr = (addr - 0x80000000)/4;
+  return memory[addr];
+}
+
+svBit check_finsih(int inst){
+  if(inst == 0x100073) //ebreak;
+    return 1;
+  else 
+    return 0;
+}
+
+int main() {
+  ////////////////////// init: //////////////////////
+  VerilatedContext* contextp = new VerilatedContext;
+  VerilatedVcdC* tfp = new VerilatedVcdC;
+  Vtop* top = new Vtop;
+  
+  contextp->traceEverOn(true);
+  top->trace(tfp, 0); // Trace 0 levels of hierarchy (or see below)
+  tfp->open("dump.vcd");
+
+  ////////////////////// doing: //////////////////////
+  top->clk = 0;
+  top->rst_n = 1;
+  step_and_dump_wave(contextp,tfp,top);
+  while (!contextp->gotFinish())
+  {
+    top->clk = 1 ^ top->clk;
+    if(top->pc >= MEM_START && top->pc <= MEM_END  ){
+      top->inst = pmem_read(top->pc);
     }
+    printf("pc = %lx, ins = %x\n", top->pc, top->inst);
+    step_and_dump_wave(contextp,tfp,top);
+    //assert(top->f == (top->a) ^ (top->b) );
+  }
+  ////////////////////// exit: //////////////////////
+  step_and_dump_wave(contextp,tfp,top);
+  tfp->close();
+  delete tfp;
+  delete top;
+  delete contextp;
+  return 0;
 }
