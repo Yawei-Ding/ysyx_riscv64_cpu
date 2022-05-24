@@ -52,7 +52,8 @@ static int decode_exec(Decode *s) {
   decode_operand(s, &dest, &src1, &src2, concat(TYPE_, type)); \
   __VA_ARGS__ ; \
 }
-
+  //加了注释的指令代表尚未被测试到！！尚未被使用到！！
+  
   INSTPAT_START();
   //+-算数运算:
   INSTPAT("0000000 ????? ????? 000 ????? 01100 11", add    , R, R(dest) = src1 + src2);

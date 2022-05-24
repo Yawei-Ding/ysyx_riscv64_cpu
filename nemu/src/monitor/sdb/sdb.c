@@ -94,7 +94,6 @@ static int cmd_c(char *args) {
 
 static int cmd_q(char *args) {
   nemu_state.state = NEMU_QUIT;
-  //printf("%d\n",nemu_state.state);
   return -1;
 }
 
@@ -118,7 +117,6 @@ static int cmd_si(char *args) {
       cpu_exec(num);
     }
   }
-
   return 0;
 }
 
@@ -132,7 +130,6 @@ static int cmd_info(char *args) {
   else{
     printf("check your input cmd,this is not support!!\n");
   }
-
   return 0;
 }
 
@@ -150,12 +147,11 @@ static int cmd_x(char *args) {
   if(((argN+strlen(argN)) != ptrN) || ((argEXPR+strlen(argEXPR)) != ptrEXPR)){
     printf("Check your input cmd,args can not be non-numeric letters!\n");
   }
-
+  
   for(int i=0;i<N;i++){
     word_t paddr = EXPR+i*8;
     printf("0x%lx:\t0x%016lx\n",paddr,paddr_read(paddr,8));
   }
-
   return 0;
 }
 
@@ -233,7 +229,4 @@ void sdb_mainloop() {
 void init_sdb() {
   /* Compile the regular expressions. */
   init_regex();
-
-  /* Initialize the watchpoint pool. */
-  //init_wp_pool(); //remove by dingyawei.
 }

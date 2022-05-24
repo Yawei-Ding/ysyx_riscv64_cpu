@@ -16,7 +16,11 @@ static uint64_t g_timer = 0; // unit: us
 static bool g_print_step = false;
 
 void device_update();
-bool WP_check_update();
+
+#ifdef CONFIG_ITRACE // declaration.
+  void add_iringbuf(char *newlog);
+  void print_iringbuf();
+#endif
 
 static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
 #ifdef CONFIG_ITRACE_COND
@@ -25,6 +29,7 @@ static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
   if (g_print_step) { IFDEF(CONFIG_ITRACE, puts(_this->logbuf)); }
   IFDEF(CONFIG_DIFFTEST, difftest_step(_this->pc, dnpc));
 #ifdef CONFIG_WATCHPOINT
+  bool WP_check_update();
   if(WP_check_update() && nemu_state.state == NEMU_RUNNING){
     nemu_state.state = NEMU_STOP;
     printf("program is pause now.\n");
@@ -56,6 +61,8 @@ static void exec_once(Decode *s, vaddr_t pc) {
   void disassemble(char *str, int size, uint64_t pc, uint8_t *code, int nbyte);
   disassemble(p, s->logbuf + sizeof(s->logbuf) - p,
       MUXDEF(CONFIG_ISA_x86, s->snpc, s->pc), (uint8_t *)&s->isa.inst.val, ilen);
+
+  add_iringbuf(s->logbuf); // add by dingyawei.
 #endif
 }
 
@@ -98,8 +105,6 @@ void cpu_exec(uint64_t n) {
 
   execute(n);
 
-  //printf("nemu_state.state == %d\n",nemu_state.state);
-
   uint64_t timer_end = get_time();
   g_timer += timer_end - timer_start;
 
@@ -107,6 +112,9 @@ void cpu_exec(uint64_t n) {
     case NEMU_RUNNING: nemu_state.state = NEMU_STOP; break;
 
     case NEMU_END: case NEMU_ABORT:
+#ifdef CONFIG_ITRACE
+    print_iringbuf();
+#endif
       Log("nemu: %s at pc = " FMT_WORD,
           (nemu_state.state == NEMU_ABORT ? ANSI_FMT("ABORT", ANSI_FG_RED) :
            (nemu_state.halt_ret == 0 ? ANSI_FMT("HIT GOOD TRAP", ANSI_FG_GREEN) :

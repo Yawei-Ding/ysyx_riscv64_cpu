@@ -5,7 +5,7 @@ void am_init_monitor();
 void engine_start();
 int is_exit_status_bad();
 void init_sdb();    //used for test 正则表达式计算
-word_t expr(char *e, bool *success); //used for test 正则表达式计算
+//word_t expr(char *e, bool *success); //used for test 正则表达式计算
 
 int main(int argc, char *argv[]) {
   /* Initialize the monitor. */
