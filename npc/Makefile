@@ -8,7 +8,7 @@ com:${csrc} ${vsrc}
 
 sim:com
 	$(call git_commit, "sim RTL") # DO NOT REMOVE THIS LINE!!!
-	obj_dir/Vtop
+	obj_dir/Vtop ${IMG}
 
 wave:com sim
 	gtkwave dump.vcd

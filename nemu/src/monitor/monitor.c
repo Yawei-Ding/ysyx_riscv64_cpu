@@ -49,6 +49,9 @@ static long load_img() {
   int ret = fread(guest_to_host(RESET_VECTOR), size, 1, fp);
   assert(ret == 1);
 
+  //for(uint32_t i=0;i<size;i=i+4)
+  //  printf("0x%08x, 0x%08lx\n",CONFIG_MBASE+i,paddr_read(CONFIG_MBASE+i,4));
+
   fclose(fp);
   return size;
 }
