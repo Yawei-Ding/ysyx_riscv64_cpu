@@ -6,37 +6,11 @@
 #include <stdlib.h>
 #include <assert.h>
 
-typedef uint32_t paddr_t;
-typedef uint64_t word_t;
-#define PMEM_START 0x80000000
-#define PMEM_END   0x87ffffff
-#define PMEM_MSIZE (PMEM_END+1-PMEM_START)
+extern uint8_t pmem[PMEM_MSIZE];
 
-//uint32_t memory[10] = {0xffc10113,0x100073,0x100073,0x100073,0x100073};
-static uint8_t pmem[PMEM_MSIZE] = {};
-uint8_t* guest_to_host(paddr_t paddr) { return pmem + paddr - PMEM_START; }
-paddr_t host_to_guest(uint8_t *haddr) { return haddr - pmem + PMEM_START; }
-
-static void pmem_write(paddr_t addr, int len, word_t data) {
-  uint8_t * paddr = guest_to_host(addr);
-  switch (len) {
-    case 1: *(uint8_t  *)paddr = data; return;
-    case 2: *(uint16_t *)paddr = data; return;
-    case 4: *(uint32_t *)paddr = data; return;
-    case 8: *(uint64_t *)paddr = data; return;
-  }
-}
-
-static word_t pmem_read(paddr_t addr, int len) {
-  uint8_t * paddr = (uint8_t*) guest_to_host(addr);
-  switch (len) {
-    case 1: return *(uint8_t  *)paddr;
-    case 2: return *(uint16_t *)paddr;
-    case 4: return *(uint32_t *)paddr;
-    case 8: return *(uint64_t *)paddr;
-  }
-  assert(0);
-}
+uint64_t pmem_read(uint64_t addr, int len);
+void rtl_pmem_write(uint64_t waddr, uint64_t wdata, uint8_t wmask);
+void rtl_pmem_read(uint64_t raddr,uint64_t *rdata);
 
 static long load_img(char *img_file) {
   if (img_file == NULL) {
@@ -73,8 +47,8 @@ void step_and_dump_wave(VerilatedContext* contextp,VerilatedVcdC* tfp,Vtop* top)
   tfp->dump(contextp->time());
 }
 
-svBit check_finsih(int inst){
-  if(inst == 0x100073) //ebreak;
+svBit check_finsih(int ins){
+  if(ins == 0x100073) //ebreak;
     return 1;
   else 
     return 0;
@@ -100,10 +74,12 @@ int main(int argc, char *argv[]) {
   {
     top->clk = 1 ^ top->clk;
     if(top->pc >= PMEM_START && top->pc <= PMEM_END  ){
-      top->inst = pmem_read(top->pc,4);
+      top->ins = pmem_read(top->pc,4);
     }
-    printf("pc = %lx, ins = %x\n", top->pc, top->inst);
+    printf("pc = 0x%lx, ins = 0x%x\n", top->pc, top->ins);
     step_and_dump_wave(contextp,tfp,top);
+    if(top->pc == 0x8000002c)
+      break;
   }
   ////////////////////// exit: //////////////////////
   step_and_dump_wave(contextp,tfp,top);

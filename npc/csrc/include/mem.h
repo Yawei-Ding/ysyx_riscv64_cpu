@@ -1,0 +1,3 @@
+#define PMEM_START 0x80000000
+#define PMEM_END   0x87ffffff
+#define PMEM_MSIZE (PMEM_END+1-PMEM_START)

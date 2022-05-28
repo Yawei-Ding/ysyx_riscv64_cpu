@@ -1,4 +1,4 @@
-module Rst(
+module rst(
 	input   clk        , // 输入时钟
 	input   rst_n      , // 输入异步复位信号
 	output  rst_n_sync   // 输出同步释放后的复位信号

@@ -1,5 +1,5 @@
-`include "src/lib/define.sv"
-module RegFile (
+`include "vsrc/lib/define.sv"
+module regfile (
   input                         clk,
   input                         wen,
   input        [`REG_ADDRW-1:0] waddr,
@@ -16,14 +16,14 @@ module RegFile (
   end
 
   always @(*) begin
-    if(reg1_raddr == `REG_ADDRW'b0)
+    if(raddr1 == `REG_ADDRW'b0)
         rdata1 = `CPU_WIDTH'b0;
     else
         rdata1 = rf[raddr1];
   end
 
   always @(*) begin
-    if(reg2_raddr == `REG_ADDRW'b0)
+    if(raddr2 == `REG_ADDRW'b0)
       rdata2 = `CPU_WIDTH'b0;
     else
       rdata2 = rf[raddr2];

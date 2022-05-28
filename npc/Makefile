@@ -1,10 +1,10 @@
-csrc = csrc/*.cpp 
-vsrc = vsrc/*.sv vsrc/lib/*.sv 
+include $(NPC_HOME)/filelist.mk
 
 .PHONY:sim wave clean
 
-com:${csrc} ${vsrc}
-	verilator --trace --cc --exe --build ${csrc} ${vsrc} --top top #-Wall 
+com:${CSRC} ${VSRC}
+	echo ${INCLUDE_PATH} 
+	verilator --trace --cc --exe --build ${CSRC} ${VSRC} -FI ${CSRC_HOME}/include/mem.h --top top #-Wall 
 
 sim:com
 	$(call git_commit, "sim RTL") # DO NOT REMOVE THIS LINE!!!
