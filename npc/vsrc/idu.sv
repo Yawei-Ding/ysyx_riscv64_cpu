@@ -143,8 +143,8 @@ module idu(
   // 4.lsu:  ///////////////////////////////////////////////////////////////////////
   always@(*)begin
     case (opcode)
-      `TYPE_I_LOAD: lsu_opt = {1'b0,func3};
-      `TYPE_S:      lsu_opt = {1'b1,func3};
+      `TYPE_I_LOAD: lsu_opt = {func3,1'b0};
+      `TYPE_S:      lsu_opt = {func3,1'b1};
       default:      lsu_opt = `LSU_NOP;
     endcase
   end

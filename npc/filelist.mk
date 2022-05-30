@@ -16,5 +16,6 @@ VSRC += ${VSRC_HOME}/top.sv
 CSRC += ${CSRC_HOME}/mem.cpp
 CSRC += ${CSRC_HOME}/init.cpp
 CSRC += ${CSRC_HOME}/dpic.cpp
+CSRC += ${CSRC_HOME}/reg.cpp
 CSRC += ${CSRC_HOME}/difftest.cpp
 CSRC += ${CSRC_HOME}/main.cpp

@@ -95,15 +95,15 @@
 `define ALU_SUBU        `EXU_OPT_WIDTH'h22  //use for sltu,bltu,bgeu
 
 `define LSU_OPT_WIDTH   4
-`define LSU_LB          `LSU_OPT_WIDTH'b0000    //0 for load,  000 for FUNC3_LB
-`define LSU_LH          `LSU_OPT_WIDTH'b0001    //0 for load,  001 for FUNC3_LH
-`define LSU_LW          `LSU_OPT_WIDTH'b0010    //0 for load,  010 for FUNC3_LW
-`define LSU_LD          `LSU_OPT_WIDTH'b0011    //0 for load,  011 for FUNC3_LD
-`define LSU_LBU         `LSU_OPT_WIDTH'b0100    //0 for load,  100 for FUNC3_LBU
-`define LSU_LHU         `LSU_OPT_WIDTH'b0101    //0 for load,  101 for FUNC3_LHU
-`define LSU_LWU         `LSU_OPT_WIDTH'b0110    //0 for load,  110 for FUNC3_LWU
-`define LSU_SB          `LSU_OPT_WIDTH'b1000    //1 for store, 000 for FUNC3_SB
-`define LSU_SH          `LSU_OPT_WIDTH'b1001    //1 for store, 001 for FUNC3_SH
-`define LSU_SW          `LSU_OPT_WIDTH'b1010    //1 for store, 010 for FUNC3_SW
-`define LSU_SD          `LSU_OPT_WIDTH'b1011    //1 for store, 011 for FUNC3_SD
-`define LSU_NOP         `LSU_OPT_WIDTH'b1111    //1111 for nop!! "highest bit = 0" <=> "this is an load ins"
+`define LSU_LB          `LSU_OPT_WIDTH'b0000    // 000 for FUNC3_LB, 0 for load
+`define LSU_LH          `LSU_OPT_WIDTH'b0010    // 001 for FUNC3_LH, 0 for load
+`define LSU_LW          `LSU_OPT_WIDTH'b0100    // 010 for FUNC3_LW, 0 for load
+`define LSU_LD          `LSU_OPT_WIDTH'b0110    // 011 for FUNC3_LD, 0 for load
+`define LSU_LBU         `LSU_OPT_WIDTH'b1000    // 100 for FUNC3_LBU,0 for load
+`define LSU_LHU         `LSU_OPT_WIDTH'b1010    // 101 for FUNC3_LHU,0 for load
+`define LSU_LWU         `LSU_OPT_WIDTH'b1100    // 110 for FUNC3_LWU,0 for load
+`define LSU_SB          `LSU_OPT_WIDTH'b0001    // 000 for FUNC3_SB, 1 for store
+`define LSU_SH          `LSU_OPT_WIDTH'b0011    // 001 for FUNC3_SH, 1 for store
+`define LSU_SW          `LSU_OPT_WIDTH'b0101    // 010 for FUNC3_SW, 1 for store
+`define LSU_SD          `LSU_OPT_WIDTH'b0111    // 011 for FUNC3_SD, 1 for store
+`define LSU_NOP         `LSU_OPT_WIDTH'b1111    //1111 for nop!! "lowest bit = 0" <=> "this is an load ins"
