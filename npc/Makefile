@@ -4,13 +4,13 @@ include $(NPC_HOME)/filelist.mk
 
 com:${CSRC} ${VSRC}
 	echo ${INCLUDE_PATH} 
-	verilator --trace --cc --exe --build ${CSRC} ${VSRC} -FI ${CSRC_HOME}/include/mem.h --top top #-Wall 
+	verilator -Wall --trace --cc --exe --build ${CSRC} ${VSRC} --top top -LDFLAGS -ldl
 
 sim:com
 	$(call git_commit, "sim RTL") # DO NOT REMOVE THIS LINE!!!
-	obj_dir/Vtop ${IMG}
+	obj_dir/Vtop --img=${IMG} --diff=${DIFFTEST}
 
-wave:com sim
+wave:
 	gtkwave dump.vcd
 
 clean:

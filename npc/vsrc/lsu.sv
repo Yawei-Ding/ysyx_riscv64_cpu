@@ -6,7 +6,8 @@ module lsu (
   output  logic [`CPU_WIDTH-1:0]      regld     // for ld.
 );
 
-  wire  [`CPU_WIDTH-1:0] raddr = addr;
+  wire ren = ~opt[0];
+  wire [`CPU_WIDTH-1:0] raddr = addr;
   wire [`CPU_WIDTH-1:0] rdata;
   always @(*) begin
     case (opt)
@@ -41,10 +42,10 @@ module lsu (
     wmask <= mask;
   end
 
-  import "DPI-C" function void rtl_pmem_read(input longint raddr, output longint rdata);
+  import "DPI-C" function void rtl_pmem_read (input longint raddr, output longint rdata, input bit ren);
   import "DPI-C" function void rtl_pmem_write(input longint waddr, input longint wdata, input byte wmask);
   always @(*) begin
-    rtl_pmem_read(raddr, rdata);
+    rtl_pmem_read (raddr, rdata, ren);
     rtl_pmem_write(waddr, wdata, wmask);
   end
 

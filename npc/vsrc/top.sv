@@ -3,7 +3,7 @@ module top(
   input                 clk   ,
   input                 rst_n ,
   input         [31:0]  ins   ,
-  output logic  [63:0]  pc             
+  output logic  [63:0]  pc    
 );
   //1.rst : ////////////////////////////////////////////////////////
   logic rst_n_sync;//rst_n for whole cpu!!
@@ -30,6 +30,7 @@ module top(
   logic [`CPU_WIDTH-1:0] rd;              // wbu -> reg.  
   logic rdwen;                            // idu -> reg.
 
+  logic a0zero; // use for sim, good trap or bad trap. if a0 is zero, a0zero == 1
   regfile u_regfile(
   	.clk    (clk    ),
     .wen    (rdwen  ),
@@ -38,7 +39,8 @@ module top(
     .raddr1 (rs1id  ),
     .raddr2 (rs2id  ),
     .rdata1 (rs1    ),
-    .rdata2 (rs2    )
+    .rdata2 (rs2    ),
+    .a0zero (a0zero )
   );
   
   idu u_idu(
@@ -63,7 +65,7 @@ module top(
     .imm     (imm         ),
     .src_sel (exu_src_sel ),
     .opt     (exu_opt     ),
-    .result  (rd          ),
+    .result  (exu_res     ),
     .zero    (zero        )
   );
 
@@ -95,11 +97,16 @@ module top(
   );
 
   //sim:  ////////////////////////////////////////////////////////
+  import "DPI-C" function void check_rst(input bit rst_flag);
   import "DPI-C" function bit check_finsih(input int finish_flag);
   always@(*)begin
+    check_rst(rst_n_sync);
     if(check_finsih(ins))begin
       $finish;
-      $display("HIT GOOD TRAP!!");
+      if(a0zero)
+        $display("HIT GOOD TRAP!!");
+      else
+        $display("HIT BAD  TRAP!!");
     end
   end
 

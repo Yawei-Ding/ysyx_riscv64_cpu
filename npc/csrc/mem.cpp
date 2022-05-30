@@ -1,4 +1,4 @@
-#include "Vtop.h"
+#include "include/include.h"
 
 uint8_t pmem[PMEM_MSIZE] = {};
 
@@ -24,19 +24,4 @@ uint64_t pmem_read(uint64_t addr, int len) {
     case 8: return *(uint64_t *)paddr;
   }
   assert(0);
-}
-
-extern "C" void rtl_pmem_write(uint64_t waddr, uint64_t wdata, uint8_t wmask){
-  switch (wmask)
-  {
-    case 1:   pmem_write(waddr, wdata, 1); break; // 0000_0001, 1byte.
-    case 3:   pmem_write(waddr, wdata, 2); break; // 0000_0011, 2byte.
-    case 15:  pmem_write(waddr, wdata, 2); break; // 0000_1111, 2byte.
-    case 255: pmem_write(waddr, wdata, 2); break; // 1111_1111, 8byte.
-    default:  break;
-  }
-}
-
-extern "C" void rtl_pmem_read(uint64_t raddr,uint64_t *rdata){
-  *rdata = pmem_read(raddr,8);
 }

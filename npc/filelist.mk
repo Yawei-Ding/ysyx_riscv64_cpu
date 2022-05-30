@@ -1,6 +1,6 @@
-VSRC_HOME = $(NPC_HOME)/vsrc
 CSRC_HOME = $(NPC_HOME)/csrc
-INCLUDE_PATH = $(VSRC_HOME)/lib
+VSRC_HOME = $(NPC_HOME)/vsrc
+DIFFTEST = ${NEMU_HOME}/build/riscv64-nemu-interpreter-so
 
 VSRC += ${VSRC_HOME}/lib/define.sv
 VSRC += ${VSRC_HOME}/lib/rst.sv
@@ -14,4 +14,7 @@ VSRC += ${VSRC_HOME}/wbu.sv
 VSRC += ${VSRC_HOME}/top.sv
 
 CSRC += ${CSRC_HOME}/mem.cpp
+CSRC += ${CSRC_HOME}/init.cpp
+CSRC += ${CSRC_HOME}/dpic.cpp
+CSRC += ${CSRC_HOME}/difftest.cpp
 CSRC += ${CSRC_HOME}/main.cpp

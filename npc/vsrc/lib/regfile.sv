@@ -7,8 +7,11 @@ module regfile (
   input        [`REG_ADDRW-1:0] raddr1,
   input        [`REG_ADDRW-1:0] raddr2,
   output logic [`CPU_WIDTH-1:0] rdata1,
-  output logic [`CPU_WIDTH-1:0] rdata2
+  output logic [`CPU_WIDTH-1:0] rdata2,
+  output logic                  a0zero  //use for sim, good trap or bad trap.
 );
+
+  assign a0zero = ~|rf[10]; // if x[10]/a0 is zero, a0zero == 1
 
   reg [`CPU_WIDTH-1:0] rf [`REG_COUNT-1:0];
   always @(posedge clk) begin
