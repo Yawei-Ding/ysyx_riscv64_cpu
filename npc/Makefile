@@ -3,7 +3,6 @@ include $(NPC_HOME)/filelist.mk
 .PHONY:sim wave clean
 
 com:${CSRC} ${VSRC}
-	echo ${INCLUDE_PATH} 
 	verilator -Wall --trace --cc --exe --build ${CSRC} ${VSRC} --top top -LDFLAGS -ldl
 
 sim:com

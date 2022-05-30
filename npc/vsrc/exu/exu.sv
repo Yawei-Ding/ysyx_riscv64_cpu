@@ -36,7 +36,7 @@ module exu (
       `EXU_BLT:   begin alu_opt = `ALU_SUB;   result[`CPU_WIDTH-1:1] = 0; result[0] =  alu_res[`CPU_WIDTH-1];  end
       `EXU_BGE:   begin alu_opt = `ALU_SUB;   result[`CPU_WIDTH-1:1] = 0; result[0] = ~alu_res[`CPU_WIDTH-1];  end
       `EXU_BLTU:  begin alu_opt = `ALU_SUBU;  result[`CPU_WIDTH-1:1] = 0; result[0] = sububit               ;  end
-      `EXU_BGEU:  begin alu_opt = `ALU_SUBU;  result[`CPU_WIDTH-1:1] = 0; result[0] = sububit               ;  end
+      `EXU_BGEU:  begin alu_opt = `ALU_SUBU;  result[`CPU_WIDTH-1:1] = 0; result[0] = ~sububit              ;  end
       default:    begin alu_opt = opt;        result = alu_res;                                                end
     endcase
   end

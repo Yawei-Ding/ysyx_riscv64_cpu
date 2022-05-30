@@ -29,9 +29,10 @@ extern "C" void rtl_pmem_write(uint64_t waddr, uint64_t wdata, uint8_t wmask){
 }
 
 extern "C" void rtl_pmem_read(uint64_t raddr,uint64_t *rdata, svBit ren){
-  //printf("raddr = 0x%lx,rdata = 0x%lx, ren = %d\n",raddr,*rdata,ren);
-  if (ren)
+  //printf("ren = %d, raddr = 0x%08lx,rdata = 0x%016lx\n",ren,raddr,*rdata);
+  if (ren && raddr>=PMEM_START && raddr<=PMEM_END){
     *rdata = pmem_read(raddr,8);
+  }
   else //avoid latch.
     *rdata = 0;
 }

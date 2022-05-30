@@ -17,7 +17,7 @@ module idu(
 );
 
   // ebreak & ecall are not supperted now. ebreak will cause system finish.
-  wire [6:0] func7  = ins[31:25];
+  //wire [6:0] func7  = ins[31:25]; // no use, warning.
   wire [4:0] rs2    = ins[24:20];
   wire [4:0] rs1    = ins[19:15];
   wire [2:0] func3  = ins[14:12];
@@ -39,7 +39,7 @@ module idu(
       `TYPE_I_W:      begin               rs1id = rs1;  rdid = rd;  rdwen = 1'b1; end
       `TYPE_I_LOAD:   begin               rs1id = rs1;  rdid = rd;  rdwen = 1'b1; end
       `TYPE_I_JALR:   begin               rs1id = rs1;  rdid = rd;  rdwen = 1'b1; end
-      //`TYPE_I_EBRK:   begin               rs1id = rs1;  rdid = rd;  rdwen = 1'b1; end
+      `TYPE_I_EBRK:   begin               rs1id = rs1;  rdid = rd;                end
       `TYPE_U_LUI:    begin               rs1id = 0  ;  rdid = rd;  rdwen = 1'b1; end //LUI: rd = x0 + imm;
       `TYPE_U_AUIPC:  begin                             rdid = rd;  rdwen = 1'b1; end
       `TYPE_J:        begin                             rdid = rd;  rdwen = 1'b1; end
@@ -57,7 +57,7 @@ module idu(
       `TYPE_I_W:      imm = {{52{ins[31]}},ins[31:20]};
       `TYPE_I_LOAD:   imm = {{52{ins[31]}},ins[31:20]};
       `TYPE_I_JALR:   imm = {{52{ins[31]}},ins[31:20]};
-      //`TYPE_I_EBRK:   imm = {{52{ins[31]}},ins[31:20]};
+      `TYPE_I_EBRK:   imm = {{52{ins[31]}},ins[31:20]};
       `TYPE_U_LUI:    imm = {{32{ins[31]}},ins[31:12],12'b0};
       `TYPE_U_AUIPC:  imm = {{32{ins[31]}},ins[31:12],12'b0};
       `TYPE_J:        imm = {{44{ins[31]}},ins[19:12],ins[20],ins[30:21],1'b0};
@@ -72,7 +72,7 @@ module idu(
     exu_src_sel = `EXU_SEL_IMM;
     case (opcode)
       `TYPE_S:        begin exu_opt = `EXU_ADD;  exu_src_sel = `EXU_SEL_IMM; end // M[rs1+imm] = rs2
-      //`TYPE_I_EBRK:   begin end
+      `TYPE_I_EBRK:   begin                                                  end // no use.
       `TYPE_I_LOAD:   begin exu_opt = `EXU_ADD;  exu_src_sel = `EXU_SEL_IMM; end // rd = M[rs1+imm]
       `TYPE_I_JALR:   begin exu_opt = `EXU_ADD;  exu_src_sel = `EXU_SEL_PC4; end // rd = PC+4
       `TYPE_J:        begin exu_opt = `EXU_ADD;  exu_src_sel = `EXU_SEL_PC4; end // rd = PC+4
@@ -93,8 +93,8 @@ module idu(
       `TYPE_R: begin
         exu_src_sel = `EXU_SEL_REG;
         case (func3)
-          `FUNC3_ADD_SUB: if(func7 == 7'h00) exu_opt = `EXU_ADD; else exu_opt = `EXU_SUB;
-          `FUNC3_SRL_SRA: if(func7 == 7'h00) exu_opt = `EXU_SRL; else exu_opt = `EXU_SRA;
+          `FUNC3_ADD_SUB: if(ins[30] == 1'h0) exu_opt = `EXU_ADD; else exu_opt = `EXU_SUB;
+          `FUNC3_SRL_SRA: if(ins[30] == 1'h0) exu_opt = `EXU_SRL; else exu_opt = `EXU_SRA;
           `FUNC3_SLL:     exu_opt = `EXU_SLL;
           `FUNC3_XOR:     exu_opt = `EXU_XOR;
           `FUNC3_OR:      exu_opt = `EXU_OR ;
@@ -108,7 +108,7 @@ module idu(
         exu_src_sel = `EXU_SEL_IMM;
         case (func3)
           `FUNC3_ADD_SUB: exu_opt = `EXU_ADD;
-          `FUNC3_SRL_SRA: if(func7 == 7'h00) exu_opt = `EXU_SRL; else exu_opt = `EXU_SRA;
+          `FUNC3_SRL_SRA: if(ins[30] == 1'h0) exu_opt = `EXU_SRL; else exu_opt = `EXU_SRA;
           `FUNC3_SLL:     exu_opt = `EXU_SLL;
           `FUNC3_XOR:     exu_opt = `EXU_XOR;
           `FUNC3_OR:      exu_opt = `EXU_OR ;
@@ -122,7 +122,7 @@ module idu(
         exu_src_sel = `EXU_SEL_IMM;
         case (func3)
           `FUNC3_ADD_SUB: exu_opt = `EXU_ADDW;
-          `FUNC3_SRL_SRA: if(func7 == 7'h00) exu_opt = `EXU_SRLW; else exu_opt = `EXU_SRAW;
+          `FUNC3_SRL_SRA: if(ins[30] == 1'h00) exu_opt = `EXU_SRLW; else exu_opt = `EXU_SRAW;
           `FUNC3_SLL:     exu_opt = `EXU_SLLW;
           default:  ;
         endcase
@@ -130,8 +130,8 @@ module idu(
       `TYPE_R_W: begin
         exu_src_sel = `EXU_SEL_REG;
         case (func3)
-          `FUNC3_ADD_SUB: if(func7 == 7'h00) exu_opt = `EXU_ADDW; else exu_opt = `EXU_SUBW;
-          `FUNC3_SRL_SRA: if(func7 == 7'h00) exu_opt = `EXU_SRLW; else exu_opt = `EXU_SRAW;
+          `FUNC3_ADD_SUB: if(ins[30] == 1'h0) exu_opt = `EXU_ADDW; else exu_opt = `EXU_SUBW;
+          `FUNC3_SRL_SRA: if(ins[30] == 1'h0) exu_opt = `EXU_SRLW; else exu_opt = `EXU_SRAW;
           `FUNC3_SLL:     exu_opt = `EXU_SLLW;
           default:  ;
         endcase
