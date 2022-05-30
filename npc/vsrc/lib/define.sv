@@ -1,7 +1,7 @@
 
 // cpu width define:
 `define CPU_WIDTH 64
-`define REG_COUNT 1<<`REG_ADDRW
+`define REG_COUNT (1<<`REG_ADDRW)
 `define REG_ADDRW 5
 
 // opcode -> ins type:

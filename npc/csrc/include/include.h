@@ -6,13 +6,18 @@
 #include <stdlib.h>
 #include <assert.h>
 
+#define INST_START 0x80000000
 #define PMEM_START 0x80000000
 #define PMEM_END   0x87ffffff
 #define PMEM_MSIZE (PMEM_END+1-PMEM_START)
 
+uint8_t* guest_to_host(uint64_t paddr);
+uint64_t host_to_guest(uint8_t *haddr);
 uint64_t pmem_read(uint64_t addr, int len);
 void pmem_write(uint64_t addr, uint64_t data, int len);
-void difftest_init(char *ref_so_file, long img_size);
 void npc_init(int argc, char *argv[]);
+void difftest_init(char *ref_so_file, long img_size);
+bool difftest_check(uint64_t pc);
+void difftest_step();
 
 #endif

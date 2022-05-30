@@ -3,7 +3,7 @@
 #include "verilated.h"
 #include "verilated_vcd_c.h"
 
-extern bool rst_n_sync; //read from rtl by dpi-c.
+bool rst_n_sync = false; //read from rtl by dpi-c.
 
 void step_and_dump_wave(VerilatedContext* contextp,VerilatedVcdC* tfp,Vtop* top)
 {
@@ -13,31 +13,32 @@ void step_and_dump_wave(VerilatedContext* contextp,VerilatedVcdC* tfp,Vtop* top)
 }
 
 int main(int argc, char *argv[]) {
-  ////////////////////// init npc status: /////////////////////
-  npc_init(argc,argv);
   ////////////////////// verilator init: //////////////////////
   VerilatedContext* contextp = new VerilatedContext;
   VerilatedVcdC* tfp = new VerilatedVcdC;
   Vtop* top = new Vtop;
-  
-  contextp->randReset(2);
   contextp->traceEverOn(true);
   top->trace(tfp, 0); // Trace 0 levels of hierarchy (or see below)
   tfp->open("dump.vcd");
 
-  ////////////////////// verilator doing: //////////////////////
+  ////////////////////// init npc status: /////////////////////
   top->rst_n = !0;
   top->clk = 0;
   top->ins = 0;
-  step_and_dump_wave(contextp,tfp,top);
+  step_and_dump_wave(contextp,tfp,top); //init reg status,use for difftest_init.
+  npc_init(argc,argv);
+
+  ////////////////////// verilator doing: //////////////////////
   while (!contextp->gotFinish())
   {
     top->clk = !top->clk;  //clk = ~clk;
     if(top->clk){
-      top->eval();  //update rst_n_sync and pc to fetch ins.
+      top->eval();         //update rst_n_sync and pc to fetch ins.
       if(rst_n_sync){
-        top->ins = pmem_read(top->pc,4);
-        printf("pc = 0x%lx, ins = 0x%08x\n", top->pc, top->ins);
+        if(!difftest_check(top->pc)) break; // check last cycle reg/mem.
+        top->ins = pmem_read(top->pc,4);    // rtl step, but not update reg/mem, update reg/mem in next posedge clk.
+        difftest_step();                    // ref step and update regs/mem.
+        //printf("pc = 0x%lx, ins = 0x%08x\n", top->pc, top->ins);
       }
     }
     step_and_dump_wave(contextp,tfp,top);

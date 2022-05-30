@@ -96,7 +96,7 @@ module top(
     .pc    (pc        )
   );
 
-  //sim:  ////////////////////////////////////////////////////////
+  //3.sim:  ////////////////////////////////////////////////////////
   import "DPI-C" function void check_rst(input bit rst_flag);
   import "DPI-C" function bit check_finsih(input int finish_flag);
   always@(*)begin

@@ -15,21 +15,19 @@ module regfile (
 
   reg [`CPU_WIDTH-1:0] rf [`REG_COUNT-1:0];
   always @(posedge clk) begin
-    if (wen) rf[waddr] <= wdata;
+    if (wen) begin
+      if(waddr == `REG_ADDRW'b0)
+        rf[waddr] <= `CPU_WIDTH'b0;
+      else
+        rf[waddr] <= wdata;
+    end
   end
 
-  always @(*) begin
-    if(raddr1 == `REG_ADDRW'b0)
-        rdata1 = `CPU_WIDTH'b0;
-    else
-        rdata1 = rf[raddr1];
-  end
+  assign rdata1 = rf[raddr1];
+  assign rdata2 = rf[raddr2];
 
-  always @(*) begin
-    if(raddr2 == `REG_ADDRW'b0)
-      rdata2 = `CPU_WIDTH'b0;
-    else
-      rdata2 = rf[raddr2];
-  end
+  //for sim:  ////////////////////////////////////////////////////////////////////////////////////////////
+  import "DPI-C" function void set_reg_ptr(input logic [63:0] a []);
+  initial set_reg_ptr(rf);
 
 endmodule

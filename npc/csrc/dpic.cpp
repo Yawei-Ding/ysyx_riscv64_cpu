@@ -1,7 +1,7 @@
 #include "include/include.h"
+#include "verilated_dpi.h"
 
-bool rst_n_sync = false;
-
+extern bool rst_n_sync;
 extern "C" void check_rst(svBit rst_flag){
   if(rst_flag)
     rst_n_sync = true;
@@ -34,4 +34,9 @@ extern "C" void rtl_pmem_read(uint64_t raddr,uint64_t *rdata, svBit ren){
     *rdata = pmem_read(raddr,8);
   else //avoid latch.
     *rdata = 0;
+}
+
+extern uint64_t *dut_reg;
+extern "C" void set_reg_ptr(const svOpenArrayHandle r) {
+  dut_reg = (uint64_t *)(((VerilatedDpiOpenVar*)r)->datap());
 }
