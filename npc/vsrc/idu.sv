@@ -72,7 +72,7 @@ module idu(
     exu_src_sel = `EXU_SEL_IMM;
     case (opcode)
       `TYPE_S:        begin exu_opt = `EXU_ADD;  exu_src_sel = `EXU_SEL_IMM; end // M[rs1+imm] = rs2
-      `TYPE_I_EBRK:   begin                                                  end // no use.
+      `TYPE_I_EBRK:   begin                                                  end // no use, dirct break.
       `TYPE_I_LOAD:   begin exu_opt = `EXU_ADD;  exu_src_sel = `EXU_SEL_IMM; end // rd = M[rs1+imm]
       `TYPE_I_JALR:   begin exu_opt = `EXU_ADD;  exu_src_sel = `EXU_SEL_PC4; end // rd = PC+4
       `TYPE_J:        begin exu_opt = `EXU_ADD;  exu_src_sel = `EXU_SEL_PC4; end // rd = PC+4
@@ -90,49 +90,52 @@ module idu(
           default:  ;
         endcase
       end
-      `TYPE_R: begin
-        exu_src_sel = `EXU_SEL_REG;
-        case (func3)
-          `FUNC3_ADD_SUB: if(ins[30] == 1'h0) exu_opt = `EXU_ADD; else exu_opt = `EXU_SUB;
-          `FUNC3_SRL_SRA: if(ins[30] == 1'h0) exu_opt = `EXU_SRL; else exu_opt = `EXU_SRA;
-          `FUNC3_SLL:     exu_opt = `EXU_SLL;
-          `FUNC3_XOR:     exu_opt = `EXU_XOR;
-          `FUNC3_OR:      exu_opt = `EXU_OR ;
-          `FUNC3_AND:     exu_opt = `EXU_AND;
-          `FUNC3_SLT:     exu_opt = `EXU_SLT;
-          `FUNC3_SLTU:    exu_opt = `EXU_SLTU;
-          default:  ;
-        endcase
-      end
       `TYPE_I:begin
         exu_src_sel = `EXU_SEL_IMM;
         case (func3)
-          `FUNC3_ADD_SUB: exu_opt = `EXU_ADD;
-          `FUNC3_SRL_SRA: if(ins[30] == 1'h0) exu_opt = `EXU_SRL; else exu_opt = `EXU_SRA;
-          `FUNC3_SLL:     exu_opt = `EXU_SLL;
-          `FUNC3_XOR:     exu_opt = `EXU_XOR;
-          `FUNC3_OR:      exu_opt = `EXU_OR ;
-          `FUNC3_AND:     exu_opt = `EXU_AND;
-          `FUNC3_SLT:     exu_opt = `EXU_SLT;
-          `FUNC3_SLTU:    exu_opt = `EXU_SLTU;
+          `FUNC3_ADD_SUB_MUL:   exu_opt = `EXU_ADD; 
+          `FUNC3_SRL_SRA_DIVU:  if(ins[30]) exu_opt = `EXU_SRA; else exu_opt = `EXU_SRL;
+          `FUNC3_SLL_MULH:      exu_opt = `EXU_SLL;
+          `FUNC3_XOR_DIV:       exu_opt = `EXU_XOR;
+          `FUNC3_OR_REM:        exu_opt = `EXU_OR ;
+          `FUNC3_AND_REMU:      exu_opt = `EXU_AND;
+          `FUNC3_SLT_MULHSU:    exu_opt = `EXU_SLT;
+          `FUNC3_SLTU_MULHU:    exu_opt = `EXU_SLTU;
           default:  ;
         endcase
       end
       `TYPE_I_W: begin
         exu_src_sel = `EXU_SEL_IMM;
         case (func3)
-          `FUNC3_ADD_SUB: exu_opt = `EXU_ADDW;
-          `FUNC3_SRL_SRA: if(ins[30] == 1'h00) exu_opt = `EXU_SRLW; else exu_opt = `EXU_SRAW;
-          `FUNC3_SLL:     exu_opt = `EXU_SLLW;
+          `FUNC3_ADD_SUB_MUL:   exu_opt = `EXU_ADDW;
+          `FUNC3_SRL_SRA_DIVU:  if(ins[30]) exu_opt = `EXU_SRAW; else exu_opt = `EXU_SRLW;
+          `FUNC3_SLL_MULH:      exu_opt = `EXU_SLLW;
+          default:  ;
+        endcase
+      end
+      `TYPE_R: begin
+        exu_src_sel = `EXU_SEL_REG;
+        case (func3)
+          `FUNC3_ADD_SUB_MUL:   if(ins[25]) exu_opt = `EXU_MUL;     else if(ins[30]) exu_opt = `EXU_SUB;  else exu_opt = `EXU_ADD;
+          `FUNC3_SRL_SRA_DIVU:  if(ins[25]) exu_opt = `EXU_DIVU;    else if(ins[30]) exu_opt = `EXU_SRA;  else exu_opt = `EXU_SRL;
+          `FUNC3_SLL_MULH:      if(ins[25]) exu_opt = `EXU_MULH;    else exu_opt = `EXU_SLL;
+          `FUNC3_XOR_DIV:       if(ins[25]) exu_opt = `EXU_DIV;     else exu_opt = `EXU_XOR;
+          `FUNC3_OR_REM:        if(ins[25]) exu_opt = `EXU_REM;     else exu_opt = `EXU_OR ;
+          `FUNC3_AND_REMU:      if(ins[25]) exu_opt = `EXU_REMU;    else exu_opt = `EXU_AND;
+          `FUNC3_SLT_MULHSU:    if(ins[25]) exu_opt = `EXU_MULHSU;  else exu_opt = `EXU_SLT;
+          `FUNC3_SLTU_MULHU:    if(ins[25]) exu_opt = `EXU_MULHU;   else exu_opt = `EXU_SLTU;
           default:  ;
         endcase
       end
       `TYPE_R_W: begin
         exu_src_sel = `EXU_SEL_REG;
         case (func3)
-          `FUNC3_ADD_SUB: if(ins[30] == 1'h0) exu_opt = `EXU_ADDW; else exu_opt = `EXU_SUBW;
-          `FUNC3_SRL_SRA: if(ins[30] == 1'h0) exu_opt = `EXU_SRLW; else exu_opt = `EXU_SRAW;
-          `FUNC3_SLL:     exu_opt = `EXU_SLLW;
+          `FUNC3_ADD_SUB_MUL:   if(ins[25]) exu_opt = `EXU_MULW;   else if(ins[30]) exu_opt = `EXU_SUBW; else exu_opt = `EXU_ADDW;
+          `FUNC3_SRL_SRA_DIVU:  if(ins[25]) exu_opt = `EXU_DIVUW;  else if(ins[30]) exu_opt = `EXU_SRAW; else exu_opt = `EXU_SRLW;
+          `FUNC3_XOR_DIV:       exu_opt = `EXU_DIVW;
+          `FUNC3_OR_REM:        exu_opt = `EXU_REMW;
+          `FUNC3_AND_REMU:      exu_opt = `EXU_REMUW;
+          `FUNC3_SLL_MULH:      exu_opt = `EXU_SLLW;
           default:  ;
         endcase
       end
