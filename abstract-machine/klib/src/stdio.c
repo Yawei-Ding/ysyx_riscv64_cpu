@@ -27,7 +27,6 @@ static inline int isdigit(int c)
 static int skip_atoi(const char **s)
 {
 	int i = 0;
-
 	while (isdigit(**s))
 		i = i * 10 + *((*s)++) - '0';
 	return i;
@@ -38,11 +37,9 @@ static char *number(char *str, long num, int base, int size, int precision,
 {
 	/* we are called with base 8, 10 or 16, only, thus don't need "G..."  */
 	static const char digits[16] = "0123456789ABCDEF"; /* "GHIJKLMNOPQRSTUVWXYZ"; */
-
 	char tmp[66];
 	char c, sign, locase;
 	int i;
-
 	/* locase = 0 or 0x20. ORing digits or letters with 'locase'
 	 * produces same digits or (maybe lowercased) letters */
 	locase = (type & SMALL);
@@ -112,9 +109,7 @@ int vsprintf(char *buf, const char *fmt, va_list args)
 	int i, base;
 	char *str;
 	const char *s;
-
 	int flags;		/* flags to number() */
-
 	int field_width;	/* width of output field */
 	int precision;		/* min. # of digits for integers; max
 				   number of chars for from string */
@@ -285,29 +280,34 @@ int vsnprintf(char *out, size_t n, const char *fmt, va_list ap) {
 
 int sprintf(char *buf, const char *fmt, ...)
 {
-	va_list args;
-	int i;
+  va_list args;
+  int i;
 
-	va_start(args, fmt);
-	i = vsprintf(buf, fmt, args);
-	va_end(args);
-	return i;
+  va_start(args, fmt);
+  i = vsprintf(buf, fmt, args);
+  va_end(args);
+  return i;
+}
+
+void puts(const char *str)
+{
+	while (*str)
+		putch(*str++);
 }
 
 int printf(const char *fmt, ...)
 {
-	// char printf_buf[1024];
-	// va_list args;
-	// int printed;
+  char printf_buf[1024];
+  va_list args;
+  int printed;
 
-	// va_start(args, fmt);
-	// printed = vsprintf(printf_buf, fmt, args);
-	// va_end(args);
+  va_start(args, fmt);
+  printed = vsprintf(printf_buf, fmt, args);
+  va_end(args);
 
-	// puts(printf_buf);
+  puts(printf_buf);
 
-	// return printed;
-  panic("Not implemented");
+  return printed;
 }
 
 
