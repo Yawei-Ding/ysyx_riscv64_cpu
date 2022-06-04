@@ -1,6 +1,8 @@
 #include "include/include.h"
 #include <dlfcn.h>
 
+#ifdef  DIFFTEST_ON
+
 extern uint64_t *dut_reg;
 
 enum { DIFFTEST_TO_DUT, DIFFTEST_TO_REF };
@@ -48,3 +50,5 @@ bool difftest_check(uint64_t pc) {
 void difftest_step() {
   ref_difftest_exec(1);
 }
+
+#endif

@@ -35,7 +35,7 @@ module lsu (
   end
 
   // Due to comb logic delay, there must use an reg!!
-  // Think about this situation: if waddr and wdata is not ready, and write it to mem immediately. it's wrong! 
+  // Think about this situation: if waddr and wdata is not ready, but write it to mem immediately. it's wrong! 
   always @(posedge clk) begin
     waddr <= addr;
     wdata <= regst;

@@ -10,3 +10,8 @@
 !*.cpp
 !.gitignore
 !README.md
+!/vsrc/*
+!/csrc/*
+/obj_dir
+dump.vcd
+

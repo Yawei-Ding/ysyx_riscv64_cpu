@@ -1,9 +1,13 @@
-# "一生一芯"工程项目
+# 一生一芯计划 - riscv64处理器设计
+## 开发进度：
 
-这是"一生一芯"的工程项目. 通过运行
-```bash
-bash init.sh subproject-name
+1.branch - OneCycleNPC: RISCV64IM单周期处理器核，已完成设计:
+![img](README.assets/OneCycleNPC.png)
+
+2.branch - FiveStagePipelineNPC: 五级流水线处理器设计，正在设计中。
+
+## 运行方法：
+切换目录至ysyx-workbench/am-kernels/tests/cpu-tests，执行命令：
 ```
-进行初始化, 具体请参考[实验讲义][lecture note].
-
-[lecture note]: https://docs.ysyx.org/schedule.html
+make ARCH=riscv64-npc run
+```

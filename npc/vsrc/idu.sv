@@ -1,13 +1,11 @@
 `include "vsrc/lib/define.sv"
 module idu(
   input        [31:0]               ins,
-  output logic [`REG_ADDRW-1:0]     rdid ,
-  output logic [`REG_ADDRW-1:0]     rs1id,
-  output logic [`REG_ADDRW-1:0]     rs2id,
-  output logic [`CPU_WIDTH-1:0]     imm  ,
-  
-  // output flags:
+  output logic [`REG_ADDRW-1:0]     rdid ,      //for reg.
+  output logic [`REG_ADDRW-1:0]     rs1id,      //for reg.
+  output logic [`REG_ADDRW-1:0]     rs2id,      //for reg.
   output logic                      rdwen,      //for reg.
+  output logic [`CPU_WIDTH-1:0]     imm  ,      //for exu.
   output logic [`EXU_SEL_WIDTH-1:0] exu_src_sel,//for exu.
   output logic [`EXU_OPT_WIDTH-1:0] exu_opt,    //for exu.
   output logic [`LSU_OPT_WIDTH-1:0] lsu_opt,    //for lsu.

@@ -104,9 +104,9 @@ module top(
     if(check_finsih(ins))begin
       $finish;
       if(a0zero)
-        $display("HIT GOOD TRAP!!");
+        $display("\n----------EBREAK: HIT GOOD GOOD GOOD GOOD GOOD TRAP!!---------------\n");
       else
-        $display("HIT BAD  TRAP!!");
+        $display("\n----------EBREAK: HIT BAD BAD BAD BAD BAD BAD TRAP!!---------------\n");
     end
   end
 

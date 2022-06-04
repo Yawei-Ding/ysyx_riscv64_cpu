@@ -13,17 +13,7 @@ module pcu (
 
   logic [`CPU_WIDTH-1:0] next_pc;
 
-  always @(*) begin
-    if (brch && ~zero) begin
-      next_pc = pc + imm;
-    end else if (jal) begin
-      next_pc = pc + imm;  
-    end else if (jalr) begin
-      next_pc = rs1 + imm;
-    end else begin
-      next_pc = pc + 4;
-    end
-  end
+  assign next_pc = (brch && ~zero || jal) ? (pc + imm) : (jalr ? (rs1 + imm) : (pc + 4) );
 
   always@(posedge clk)begin
     if(!rst_n)begin
