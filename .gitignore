@@ -10,6 +10,7 @@
 !README.md
 !.gitignore
 !init.sh
+!/README.assets/*
 /fceux-am
 /nvboard
 /am-kernels
