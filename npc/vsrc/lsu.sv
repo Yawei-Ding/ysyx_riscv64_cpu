@@ -1,31 +1,32 @@
 module lsu (
-  input                               clk   ,
-  input         [`LSU_OPT_WIDTH-1:0]  opt   ,   // lsu opt.
-  input         [`CPU_WIDTH-1:0]      addr  ,   // mem addr. from exu result.
-  input         [`CPU_WIDTH-1:0]      regst ,   // for st.
-  output  logic [`CPU_WIDTH-1:0]      regld     // for ld.
+  input                               i_clk   ,
+  input                               i_rst_n , 
+  input         [`LSU_OPT_WIDTH-1:0]  i_opt   ,   // lsu i_opt.
+  input         [`CPU_WIDTH-1:0]      i_addr  ,   // mem i_addr. from exu result.
+  input         [`CPU_WIDTH-1:0]      i_regst ,   // for st.
+  output  logic [`CPU_WIDTH-1:0]      o_regld     // for ld.
 );
 
-  wire ren = ~opt[0];
-  wire [`CPU_WIDTH-1:0] raddr = addr;
+  wire ren = ~i_opt[0];
+  wire [`CPU_WIDTH-1:0] raddr = i_addr;
   wire [`CPU_WIDTH-1:0] rdata;
   always @(*) begin
-    case (opt)
-      `LSU_LB:  regld = {{56{rdata[ 7]}}, rdata[ 7:0]};
-      `LSU_LH:  regld = {{48{rdata[15]}}, rdata[15:0]};
-      `LSU_LW:  regld = {{32{rdata[31]}}, rdata[31:0]};
-      `LSU_LD:  regld = rdata;
-      `LSU_LBU: regld = {56'b0, rdata[ 7:0]};
-      `LSU_LHU: regld = {48'b0, rdata[15:0]};
-      `LSU_LWU: regld = {32'b0, rdata[31:0]};
-      default:  regld = `CPU_WIDTH'b0;
+    case (i_opt)
+      `LSU_LB:  o_regld = {{56{rdata[ 7]}}, rdata[ 7:0]};
+      `LSU_LH:  o_regld = {{48{rdata[15]}}, rdata[15:0]};
+      `LSU_LW:  o_regld = {{32{rdata[31]}}, rdata[31:0]};
+      `LSU_LD:  o_regld = rdata;
+      `LSU_LBU: o_regld = {56'b0, rdata[ 7:0]};
+      `LSU_LHU: o_regld = {48'b0, rdata[15:0]};
+      `LSU_LWU: o_regld = {32'b0, rdata[31:0]};
+      default:  o_regld = `CPU_WIDTH'b0;
     endcase
   end
 
   logic [7:0] mask,wmask;
   logic [`CPU_WIDTH-1:0] waddr,wdata;
   always @(*) begin
-    case (opt)
+    case (i_opt)
       `LSU_SB:  mask = 8'b0000_0001;
       `LSU_SH:  mask = 8'b0000_0011;
       `LSU_SW:  mask = 8'b0000_1111;
@@ -36,10 +37,16 @@ module lsu (
 
   // Due to comb logic delay, there must use an reg!!
   // Think about this situation: if waddr and wdata is not ready, but write it to mem immediately. it's wrong! 
-  always @(posedge clk) begin
-    waddr <= addr;
-    wdata <= regst;
-    wmask <= mask;
+  always@(posedge i_clk or negedge i_rst_n)begin
+    if(!i_rst_n)begin
+      waddr <= `CPU_WIDTH'b0;
+      wdata <= `CPU_WIDTH'b0;
+      wmask <= 8'b0;
+    end else begin
+      waddr <= i_addr;
+      wdata <= i_regst;
+      wmask <= mask;
+    end
   end
 
   //for sim:  ////////////////////////////////////////////////////////////////////////////////////////////

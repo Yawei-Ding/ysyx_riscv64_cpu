@@ -1,16 +1,16 @@
 `include "vsrc/lib/define.sv"
 module top(
-  input                 clk   ,
-  input                 rst_n ,
-  input         [31:0]  ins   ,
-  output logic  [63:0]  pc    
+  input                 i_clk   ,
+  input                 i_rst_n ,
+  input         [31:0]  i_ins   ,
+  output logic  [63:0]  o_pc    
 );
   //1.rst : ////////////////////////////////////////////////////////
-  logic rst_n_sync;//rst_n for whole cpu!!
+  logic rst_n_sync;
   rst u_rst(
-  	.clk        (clk        ),
-    .rst_n      (rst_n      ),
-    .rst_n_sync (rst_n_sync )
+    .i_clk        (i_clk      ),
+    .i_rst_n      (i_rst_n    ),
+    .o_rst_n_sync (rst_n_sync )
   );
 
   //2.cpu:  /////////////////////////////////////////////////
@@ -31,69 +31,71 @@ module top(
   logic rdwen;                            // idu -> reg.
 
   logic a0zero; // use for sim, good trap or bad trap. if a0 is zero, a0zero == 1
+
   regfile u_regfile(
-  	.clk    (clk    ),
-    .wen    (rdwen  ),
-    .waddr  (rdid   ),
-    .wdata  (rd     ),
-    .raddr1 (rs1id  ),
-    .raddr2 (rs2id  ),
-    .rdata1 (rs1    ),
-    .rdata2 (rs2    ),
-    .a0zero (a0zero )
+    .i_clk    (i_clk  ),
+    .i_wen    (rdwen  ),
+    .i_waddr  (rdid   ),
+    .i_wdata  (rd     ),
+    .i_raddr1 (rs1id  ),
+    .i_raddr2 (rs2id  ),
+    .o_rdata1 (rs1    ),
+    .o_rdata2 (rs2    ),
+    .o_a0zero (a0zero )
   );
-  
+
   idu u_idu(
-  	.ins         (ins         ),
-    .rdid        (rdid        ),
-    .rs1id       (rs1id       ),
-    .rs2id       (rs2id       ),
-    .imm         (imm         ),
-    .rdwen       (rdwen       ),
-    .exu_src_sel (exu_src_sel ),
-    .exu_opt     (exu_opt     ),
-    .lsu_opt     (lsu_opt     ),
-    .brch        (brch        ),
-    .jal         (jal         ),
-    .jalr        (jalr        )
+    .i_ins         (i_ins       ),
+    .o_rdid        (rdid        ),
+    .o_rs1id       (rs1id       ),
+    .o_rs2id       (rs2id       ),
+    .o_rdwen       (rdwen       ),
+    .o_imm         (imm         ),
+    .o_exu_src_sel (exu_src_sel ),
+    .o_exu_opt     (exu_opt     ),
+    .o_lsu_opt     (lsu_opt     ),
+    .o_brch        (brch        ),
+    .o_jal         (jal         ),
+    .o_jalr        (jalr        )
   );
-  
+
   exu u_exu(
-    .pc      (pc          ),
-    .rs1     (rs1         ),
-    .rs2     (rs2         ),
-    .imm     (imm         ),
-    .src_sel (exu_src_sel ),
-    .opt     (exu_opt     ),
-    .result  (exu_res     ),
-    .zero    (zero        )
+    .i_pc      (o_pc        ),
+    .i_rs1     (rs1         ),
+    .i_rs2     (rs2         ),
+    .i_imm     (imm         ),
+    .i_src_sel (exu_src_sel ),
+    .i_opt     (exu_opt     ),
+    .o_exu_res (exu_res     ),
+    .o_zero    (zero        )
   );
 
   lsu u_lsu(
-    .clk    (clk      ),
-    .opt    (lsu_opt  ),
-    .addr   (exu_res  ),
-    .regst  (rs2      ),
-    .regld  (lsu_res  )
+    .i_clk   (i_clk   ),
+    .i_rst_n (i_rst_n ),
+    .i_opt   (lsu_opt ),
+    .i_addr  (exu_res ),
+    .i_regst (rs2     ),
+    .o_regld (lsu_res )
   );
 
   wbu u_wbu(
-    .exu_res (exu_res     ),
-    .lsu_res (lsu_res     ),
-    .load_en (~lsu_opt[0] ),
-    .rd      (rd          )
+    .i_exu_res (exu_res     ),
+    .i_lsu_res (lsu_res     ),
+    .i_ld_en   (~lsu_opt[0] ),
+    .o_rd      (rd          )
   );
 
   pcu u_pcu(
-    .clk   (clk       ),
-    .rst_n (rst_n_sync),
-    .brch  (brch      ),
-    .jal   (jal       ),
-    .jalr  (jalr      ),
-    .zero  (zero      ),
-    .rs1   (rs1       ),
-    .imm   (imm       ),
-    .pc    (pc        )
+    .i_clk    (i_clk      ),
+    .i_rst_n  (rst_n_sync ),
+    .i_brch   (brch       ),
+    .i_jal    (jal        ),
+    .i_jalr   (jalr       ),
+    .i_zero   (zero       ),
+    .i_rs1    (rs1        ),
+    .i_imm    (imm        ),
+    .o_pc     (o_pc       )
   );
 
   //3.sim:  ////////////////////////////////////////////////////////
@@ -101,7 +103,7 @@ module top(
   import "DPI-C" function bit check_finsih(input int finish_flag);
   always@(*)begin
     check_rst(rst_n_sync);
-    if(check_finsih(ins))begin
+    if(check_finsih(i_ins))begin
       $finish;
       if(a0zero)
         $display("\n----------EBREAK: HIT GOOD GOOD GOOD GOOD GOOD TRAP!!---------------\n");
