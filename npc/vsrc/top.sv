@@ -30,7 +30,7 @@ module top(
   logic [`CPU_WIDTH-1:0] rd;              // wbu -> reg.  
   logic rdwen;                            // idu -> reg.
 
-  logic a0zero; // use for sim, good trap or bad trap. if a0 is zero, a0zero == 1
+  logic a0zero;                           // use for sim, good trap or bad trap. if a0 is zero, a0zero == 1
 
   regfile u_regfile(
     .i_clk    (i_clk  ),
@@ -46,6 +46,7 @@ module top(
 
   idu u_idu(
     .i_ins         (i_ins       ),
+    .i_rst_n       (rst_n_sync  ),
     .o_rdid        (rdid        ),
     .o_rs1id       (rs1id       ),
     .o_rs2id       (rs2id       ),
@@ -71,12 +72,12 @@ module top(
   );
 
   lsu u_lsu(
-    .i_clk   (i_clk   ),
-    .i_rst_n (i_rst_n ),
-    .i_opt   (lsu_opt ),
-    .i_addr  (exu_res ),
-    .i_regst (rs2     ),
-    .o_regld (lsu_res )
+    .i_clk   (i_clk       ),
+    .i_rst_n (rst_n_sync  ),
+    .i_opt   (lsu_opt     ),
+    .i_addr  (exu_res     ),
+    .i_regst (rs2         ),
+    .o_regld (lsu_res     )
   );
 
   wbu u_wbu(
@@ -103,12 +104,9 @@ module top(
   import "DPI-C" function bit check_finsih(input int finish_flag);
   always@(*)begin
     check_rst(rst_n_sync);
-    if(check_finsih(i_ins))begin
+    if(check_finsih(i_ins))begin  //ins == ebreak.
+      $display("\n----------EBREAK: HIT !!%s!! TRAP!!---------------\n",a0zero? "GOOD":"BAD");
       $finish;
-      if(a0zero)
-        $display("\n----------EBREAK: HIT GOOD GOOD GOOD GOOD GOOD TRAP!!---------------\n");
-      else
-        $display("\n----------EBREAK: HIT BAD BAD BAD BAD BAD BAD TRAP!!---------------\n");
     end
   end
 
