@@ -40,6 +40,11 @@ extern "C" void rtl_pmem_read(uint64_t raddr,uint64_t *rdata, svBit ren){
 }
 
 extern uint64_t *dut_reg;
+extern uint64_t dut_pc;
 extern "C" void set_reg_ptr(const svOpenArrayHandle r) {
   dut_reg = (uint64_t *)(((VerilatedDpiOpenVar*)r)->datap());
+}
+
+extern "C" void diff_read_pc(uint64_t rtl_pc){
+  dut_pc = rtl_pc;
 }

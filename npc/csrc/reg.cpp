@@ -1,6 +1,7 @@
 #include "include/include.h"
 
 uint64_t *dut_reg = NULL;
+uint64_t dut_pc;
 
 const char *regs[] = {
   "$0", "ra", "sp", "gp", "tp", "t0", "t1", "t2",
@@ -26,6 +27,7 @@ bool checkregs(regfile *ref, regfile *dut) {
 }
 
 void print_regs(){
+  printf("dut pc = 0x%lx\n",dut_pc);
   for (int i = 0; i < 32; i++) {
     printf("dut reg %3s = 0x%lx\n",regs[i],dut_reg[i]);
   }

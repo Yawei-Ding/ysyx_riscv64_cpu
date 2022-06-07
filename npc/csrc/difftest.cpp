@@ -4,6 +4,7 @@
 #ifdef  DIFFTEST_ON
 
 extern uint64_t *dut_reg;
+extern uint64_t dut_pc;
 
 enum { DIFFTEST_TO_DUT, DIFFTEST_TO_REF };
 void (*ref_difftest_memcpy)(uint64_t addr, void *buf, size_t n, bool direction) = NULL;
@@ -40,10 +41,10 @@ void difftest_init(char *ref_so_file, long img_size) {
   ref_difftest_regcpy(&dut, DIFFTEST_TO_REF);
 }
 
-bool difftest_check(uint64_t pc) {
+bool difftest_check() {
   regfile ref,dut;
   ref_difftest_regcpy(&ref, DIFFTEST_TO_DUT);
-  dut = pack_dut_regfile(dut_reg,pc);
+  dut = pack_dut_regfile(dut_reg,dut_pc);
   return checkregs(&ref, &dut);
 }
 

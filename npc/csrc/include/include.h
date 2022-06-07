@@ -29,7 +29,7 @@ regfile pack_dut_regfile(uint64_t *dut_reg,uint64_t pc);
 
 #ifdef DIFFTEST_ON
 void difftest_init(char *ref_so_file, long img_size);
-bool difftest_check(uint64_t pc);
+bool difftest_check();
 void difftest_step();
 #endif
 

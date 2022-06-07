@@ -1,9 +1,7 @@
 `include "config.sv"
 module top(
   input                 i_clk   ,
-  input                 i_rst_n ,
-  input         [31:0]  i_ins   ,
-  output logic  [63:0]  o_pc    
+  input                 i_rst_n
 );
   //1.rst : ////////////////////////////////////////////////////////
   logic rst_n_sync;
@@ -14,6 +12,8 @@ module top(
   );
   
   //2.cpu:  /////////////////////////////////////////////////
+  logic [31:0]           ins;             // ifu -> idu.
+  logic [`CPU_WIDTH-1:0] pc;              // pcu -> ifu.
   logic [`REG_ADDRW-1:0] rs1id,rs2id,rdid;// idu -> reg.
   logic [`EXU_OPT_WIDTH-1:0] exu_opt;     // idu -> exu.
   logic [`EXU_SEL_WIDTH-1:0] exu_src_sel; // idu -> exu.
@@ -44,8 +44,14 @@ module top(
     .s_a0zero (a0zero )
   );
 
+  ifu u_ifu(
+    .i_pc     (pc         ),
+    .i_rst_n  (rst_n_sync ),
+    .o_ins    (ins        )
+  );
+
   idu u_idu(
-    .i_ins         (i_ins       ),
+    .i_ins         (ins         ),
     .i_rst_n       (rst_n_sync  ),
     .o_rdid        (rdid        ),
     .o_rs1id       (rs1id       ),
@@ -61,7 +67,7 @@ module top(
   );
 
   exu u_exu(
-    .i_pc      (o_pc        ),
+    .i_pc      (pc          ),
     .i_rs1     (rs1         ),
     .i_rs2     (rs2         ),
     .i_imm     (imm         ),
@@ -96,7 +102,7 @@ module top(
     .i_zero   (zero       ),
     .i_rs1    (rs1        ),
     .i_imm    (imm        ),
-    .o_pc     (o_pc       )
+    .o_pc     (pc         )
   );
 
   //3.sim:  ////////////////////////////////////////////////////////
@@ -104,7 +110,7 @@ module top(
   import "DPI-C" function bit check_finsih(input int finish_flag);
   always@(*)begin
     check_rst(rst_n_sync);
-    if(check_finsih(i_ins))begin  //ins == ebreak.
+    if(check_finsih(ins))begin  //ins == ebreak.
       $display("\n----------EBREAK: HIT !!%s!! TRAP!!---------------\n",a0zero? "GOOD":"BAD");
       $finish;
     end
