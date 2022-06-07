@@ -1,4 +1,4 @@
-`include "vsrc/lib/define.sv"
+`include "config.sv"
 module exu (
   input         [`CPU_WIDTH-1:0]      i_pc      ,
   input         [`CPU_WIDTH-1:0]      i_rs1     ,

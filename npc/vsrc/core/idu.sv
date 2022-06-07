@@ -1,4 +1,4 @@
-`include "vsrc/lib/define.sv"
+`include "config.sv"
 module idu(
   input        [31:0]               i_ins         ,
   input                             i_rst_n       , //for sim.

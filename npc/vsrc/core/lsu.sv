@@ -37,18 +37,17 @@ module lsu (
 
   // Due to comb logic delay, there must use an reg!!
   // Think about this situation: if waddr and wdata is not ready, but write it to mem immediately. it's wrong! 
-  always@(posedge i_clk or negedge i_rst_n)begin
-    if(!i_rst_n)begin
-      waddr <= `CPU_WIDTH'b0;
-      wdata <= `CPU_WIDTH'b0;
-      wmask <= 8'b0;
-    end else begin
-      waddr <= i_addr;
-      wdata <= i_regst;
-      wmask <= mask;
-    end
-  end
-
+  stdreg #(
+    .WIDTH     (2*`CPU_WIDTH+8),
+    .RESET_VAL (0 )
+  ) u_stdreg(
+    .i_clk   (i_clk                 ),
+    .i_rst_n (i_rst_n               ),
+    .i_wen   (1                     ),
+    .i_din   ({i_addr,i_regst,mask} ),
+    .o_dout  ({waddr, wdata, wmask} )
+  );
+    
   //for sim:  ////////////////////////////////////////////////////////////////////////////////////////////
   import "DPI-C" function void rtl_pmem_read (input longint raddr, output longint rdata, input bit ren);
   import "DPI-C" function void rtl_pmem_write(input longint waddr, input longint wdata, input byte wmask);

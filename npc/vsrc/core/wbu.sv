@@ -1,4 +1,4 @@
-`include "vsrc/lib/define.sv"
+`include "config.sv"
 module wbu (
   input         [`CPU_WIDTH-1:0]  i_exu_res,
   input         [`CPU_WIDTH-1:0]  i_lsu_res,

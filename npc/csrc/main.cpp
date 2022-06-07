@@ -19,7 +19,7 @@ int main(int argc, char *argv[]) {
   Vtop* top = new Vtop;
   contextp->traceEverOn(true);
   top->trace(tfp, 0);                         // Trace 0 levels of hierarchy (or see below)
-  tfp->open("dump.vcd");
+  tfp->open("obj_dir/sim.vcd");
 
   ///////////////////////////////// init npc status: ////////////////////////////////
   top->i_rst_n = !0;

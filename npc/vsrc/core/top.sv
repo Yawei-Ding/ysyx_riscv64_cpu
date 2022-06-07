@@ -1,4 +1,4 @@
-`include "vsrc/lib/define.sv"
+`include "config.sv"
 module top(
   input                 i_clk   ,
   input                 i_rst_n ,
@@ -7,12 +7,12 @@ module top(
 );
   //1.rst : ////////////////////////////////////////////////////////
   logic rst_n_sync;
-  rst u_rst(
-    .i_clk        (i_clk      ),
-    .i_rst_n      (i_rst_n    ),
-    .o_rst_n_sync (rst_n_sync )
+  stdrst u_stdrst(
+  	.i_clk        (i_clk        ),
+    .i_rst_n      (i_rst_n      ),
+    .o_rst_n_sync (rst_n_sync   )
   );
-
+  
   //2.cpu:  /////////////////////////////////////////////////
   logic [`REG_ADDRW-1:0] rs1id,rs2id,rdid;// idu -> reg.
   logic [`EXU_OPT_WIDTH-1:0] exu_opt;     // idu -> exu.
@@ -41,7 +41,7 @@ module top(
     .i_raddr2 (rs2id  ),
     .o_rdata1 (rs1    ),
     .o_rdata2 (rs2    ),
-    .o_a0zero (a0zero )
+    .s_a0zero (a0zero )
   );
 
   idu u_idu(
