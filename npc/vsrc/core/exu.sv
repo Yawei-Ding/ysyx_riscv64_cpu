@@ -11,15 +11,20 @@ module exu (
 );
 
   logic [`CPU_WIDTH-1:0] src1,src2;
-  always @(*) begin
-    src1 = i_rs1; src2 = i_rs2;
-    case (i_src_sel) 
-      `EXU_SEL_REG: begin src1 = i_rs1;   src2 = i_rs2;           end
-      `EXU_SEL_IMM: begin src1 = i_rs1;   src2 = i_imm;           end
-      `EXU_SEL_PC4: begin src1 = i_pc ;   src2 = `CPU_WIDTH'h4;   end
-      `EXU_SEL_PCI: begin src1 = i_pc ;   src2 = i_imm;           end
-    endcase
-  end
+
+  MuxKeyWithDefault #(1<<`EXU_SEL_WIDTH, `EXU_SEL_WIDTH, `CPU_WIDTH) mux_src1 (src1, i_src_sel, `CPU_WIDTH'b0, {
+    `EXU_SEL_REG, i_rs1,
+    `EXU_SEL_IMM, i_rs1,
+    `EXU_SEL_PC4, i_pc,
+    `EXU_SEL_PCI, i_pc
+  });
+
+  MuxKeyWithDefault #(1<<`EXU_SEL_WIDTH, `EXU_SEL_WIDTH, `CPU_WIDTH) mux_src2 (src2, i_src_sel, `CPU_WIDTH'b0, {
+    `EXU_SEL_REG, i_rs2,
+    `EXU_SEL_IMM, i_imm,
+    `EXU_SEL_PC4, `CPU_WIDTH'h4,
+    `EXU_SEL_PCI, i_imm
+});
 
   // 请记住：硬件中不区分有符号和无符号，全部按照补码进行运算！
   // 所以 src1 - src2 得到是补码！ 如果src1和src2是有符号数，通过输出最高位就可以判断正负！
