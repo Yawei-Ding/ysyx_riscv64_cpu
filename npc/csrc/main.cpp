@@ -30,17 +30,15 @@ int main(int argc, char *argv[]) {
   ///////////////////////////////// verilator doing: ///////////////////////////////
   while (!contextp->gotFinish())
   {
-    top->i_clk = !top->i_clk;                 //clk = ~clk;
+    top->i_clk = !top->i_clk;                 // clk = ~clk;
 #ifdef DIFFTEST_ON
-    if(top->i_clk){
-      top->eval();                            //update rst_n_sync
-      if(rst_n_sync){
-        if(!difftest_check()){                // check last cycle reg/mem.
-          print_regs();
-          break; 
-        }
-        difftest_step();                      // ref step and update regs/mem.
+    top->eval();                              // update rst_n_sync
+    if(top->i_clk && rst_n_sync){
+      if(!difftest_check()){                  // check last cycle reg/mem.
+        print_regs();
+        break; 
       }
+      difftest_step();                        // ref step and update regs/mem.
     }
 #endif
     step_and_dump_wave(contextp,tfp,top);
