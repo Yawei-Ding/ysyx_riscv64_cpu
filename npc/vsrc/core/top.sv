@@ -12,7 +12,7 @@ module top(
   );
   
   //2.cpu:  /////////////////////////////////////////////////
-  logic [31:0]           ins;             // ifu -> idu.
+  logic [`INS_WIDTH-1:0]           ins;             // ifu -> idu.
   logic [`CPU_WIDTH-1:0] pc;              // pcu -> ifu.
   logic [`REG_ADDRW-1:0] rs1id,rs2id,rdid;// idu -> reg.
   logic [`EXU_OPT_WIDTH-1:0] exu_opt;     // idu -> exu.

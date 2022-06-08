@@ -2,7 +2,7 @@
 module ifu (
   input        [`CPU_WIDTH-1:0]  i_pc   ,
   input                          i_rst_n,
-  output logic [31:0]            o_ins   
+  output logic [`INS_WIDTH-1:0]  o_ins   
 );
 
   logic [`CPU_WIDTH-1:0] ins;
@@ -14,6 +14,6 @@ module ifu (
     diff_read_pc(i_pc);
   end
 
-  assign o_ins = {ins & 64'h00000000FFFFFFFF}[31:0];
+  assign o_ins = {ins & `CPU_WIDTH'h00000000FFFFFFFF}[`INS_WIDTH-1:0];
 
 endmodule

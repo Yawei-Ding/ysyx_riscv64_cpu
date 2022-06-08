@@ -16,8 +16,8 @@ module pcu (
   assign pc_next = (i_brch && ~i_zero || i_jal) ? (o_pc + i_imm) : (i_jalr ? (i_rs1 + i_imm) : (o_pc + 4) );
 
   stdreg #(
-    .WIDTH     (`CPU_WIDTH  ),
-    .RESET_VAL (64'h80000000)
+    .WIDTH     (`CPU_WIDTH          ),
+    .RESET_VAL (`CPU_WIDTH'h80000000)
   )u_stdreg(
     .i_clk   (i_clk   ),
     .i_rst_n (i_rst_n ),

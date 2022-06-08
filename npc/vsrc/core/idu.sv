@@ -1,6 +1,6 @@
 `include "config.sv"
 module idu(
-  input        [31:0]               i_ins         ,
+  input        [`INS_WIDTH-1:0]     i_ins         ,
   input                             i_rst_n       , //for sim.
   output logic [`REG_ADDRW-1:0]     o_rdid        , //for reg.
   output logic [`REG_ADDRW-1:0]     o_rs1id       , //for reg.

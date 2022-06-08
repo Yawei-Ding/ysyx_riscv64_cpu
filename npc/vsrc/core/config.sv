@@ -1,6 +1,7 @@
 
 // cpu width define:
 `define CPU_WIDTH 64
+`define INS_WIDTH 32
 `define REG_COUNT (1<<`REG_ADDRW)
 `define REG_ADDRW 5
 
