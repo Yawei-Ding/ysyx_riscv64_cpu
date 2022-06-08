@@ -81,41 +81,6 @@
 `define EXU_REMUW       `EXU_OPT_WIDTH'h26
 `define EXU_SLT         `EXU_OPT_WIDTH'h27
 `define EXU_SLTU        `EXU_OPT_WIDTH'h28
-`define EXU_BEQ         `EXU_OPT_WIDTH'h29
-`define EXU_BNE         `EXU_OPT_WIDTH'h30
-`define EXU_BLT         `EXU_OPT_WIDTH'h31
-`define EXU_BGE         `EXU_OPT_WIDTH'h32
-`define EXU_BLTU        `EXU_OPT_WIDTH'h33
-`define EXU_BGEU        `EXU_OPT_WIDTH'h34
-
-// ALU opreator:
-`define ALU_ADD         `EXU_ADD
-`define ALU_SUB         `EXU_SUB   //use for sub,slt,beq,bne,blt,bge 
-`define ALU_ADDW        `EXU_ADDW
-`define ALU_SUBW        `EXU_SUBW
-`define ALU_AND         `EXU_AND
-`define ALU_OR          `EXU_OR
-`define ALU_XOR         `EXU_XOR
-`define ALU_SLL         `EXU_SLL
-`define ALU_SRL         `EXU_SRL
-`define ALU_SRA         `EXU_SRA
-`define ALU_SLLW        `EXU_SLLW
-`define ALU_SRLW        `EXU_SRLW
-`define ALU_SRAW        `EXU_SRAW
-`define ALU_MUL         `EXU_MUL
-`define ALU_MULH        `EXU_MULH
-`define ALU_MULHSU      `EXU_MULHSU
-`define ALU_MULHU       `EXU_MULHU
-`define ALU_DIV         `EXU_DIV
-`define ALU_DIVU        `EXU_DIVU
-`define ALU_REM         `EXU_REM
-`define ALU_REMU        `EXU_REMU
-`define ALU_MULW        `EXU_MULW
-`define ALU_DIVW        `EXU_DIVW
-`define ALU_DIVUW       `EXU_DIVUW
-`define ALU_REMW        `EXU_REMW
-`define ALU_REMUW       `EXU_REMUW
-`define ALU_SUBU        `EXU_OPT_WIDTH'h35  //use for sltu,bltu,bgeu
 
 `define LSU_OPT_WIDTH   4
 `define LSU_LB          `LSU_OPT_WIDTH'b0000    // 000 for FUNC3_LB_SB, 0 for load

@@ -1,15 +1,15 @@
 `include "config.sv"
 module idu(
   input        [`INS_WIDTH-1:0]     i_ins         ,
-  output logic [`REG_ADDRW-1:0]     o_rdid        , //for reg.
   output logic [`REG_ADDRW-1:0]     o_rs1id       , //for reg.
   output logic [`REG_ADDRW-1:0]     o_rs2id       , //for reg.
+  output logic [`REG_ADDRW-1:0]     o_rdid        , //for reg.
   output logic                      o_rdwen       , //for reg.
   output logic [`CPU_WIDTH-1:0]     o_imm         , //for exu.
   output logic [`EXU_SEL_WIDTH-1:0] o_exu_src_sel , //for exu.
   output logic [`EXU_OPT_WIDTH-1:0] o_exu_opt     , //for exu.
   output logic [`LSU_OPT_WIDTH-1:0] o_lsu_opt     , //for lsu.
-  output logic                      o_brch        , //for pcu.
+  output logic [2:0]                o_brch        , //for pcu.
   output logic                      o_jal         , //for pcu.
   output logic                      o_jalr        , //for pcu.
   output logic [2:0]                s_id_err        //for sim. bit0:opc_err, bit1:func3_err, bit2:func7_err
@@ -47,7 +47,7 @@ module idu(
     endcase
   end
 
-  //2.alu info:  /////////////////////////////////////////////////////////////////////////////////////
+  //2.exu info:  /////////////////////////////////////////////////////////////////////////////////////
   always @(*) begin
     o_exu_opt     = `EXU_ADD;
     o_exu_src_sel = `EXU_SEL_IMM;
@@ -60,19 +60,7 @@ module idu(
       `TYPE_J:        begin o_exu_opt = `EXU_ADD;  o_exu_src_sel = `EXU_SEL_PC4; end // rdid = PC+4
       `TYPE_U_LUI:    begin o_exu_opt = `EXU_ADD;  o_exu_src_sel = `EXU_SEL_IMM; end // rdid = x0 + imm
       `TYPE_U_AUIPC:  begin o_exu_opt = `EXU_ADD;  o_exu_src_sel = `EXU_SEL_PCI; end // rdid = pc + imm
-      `TYPE_B:
-        begin
-          o_exu_src_sel = `EXU_SEL_REG;
-          case (func3)
-            `FUNC3_BEQ:   o_exu_opt = `EXU_BEQ;
-            `FUNC3_BNE:   o_exu_opt = `EXU_BNE;
-            `FUNC3_BLT:   o_exu_opt = `EXU_BLT;
-            `FUNC3_BGE:   o_exu_opt = `EXU_BGE;
-            `FUNC3_BLTU:  o_exu_opt = `EXU_BLTU;
-            `FUNC3_BGEU:  o_exu_opt = `EXU_BGEU; 
-            default:      s_id_err[1] = 1'b1; //func3_err
-          endcase
-        end
+      `TYPE_B:        begin                                                      end // no use for exu, idu return. nop for type_b.
       `TYPE_I:
         begin
           o_exu_src_sel = `EXU_SEL_IMM;
@@ -139,9 +127,11 @@ module idu(
     endcase
   end
 
-  // 4.pcu: branch,o_jal,o_jalr.  ////////////////////////////////////////////////////////////////////
-  assign o_brch = (opcode == `TYPE_B)? 1:0;
+  // 4.bru: o_jump, o_jalr.  ////////////////////////////////////////////////////////////////////
+  wire branch;
+  assign branch = (opcode == `TYPE_B)? 1:0;
   assign o_jal  = (opcode == `TYPE_J)? 1:0;
   assign o_jalr = (opcode == `TYPE_I_JALR)? 1:0;
+  assign o_brch = {{3{branch}} & func3};
 
 endmodule

@@ -1,7 +1,7 @@
 `include "config.sv"
 module ifu (
-  input        [`CPU_WIDTH-1:0]  i_pc   ,
   input                          i_rst_n,
+  input        [`CPU_WIDTH-1:0]  i_pc   ,
   output logic [`INS_WIDTH-1:0]  o_ins   
 );
 
