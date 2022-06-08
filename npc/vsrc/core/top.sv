@@ -31,6 +31,7 @@ module top(
   logic rdwen;                            // idu -> reg.
 
   logic a0zero;                           // use for sim, good trap or bad trap. if a0 is zero, a0zero == 1
+  logic [2:0] s_id_err;
 
   regfile u_regfile(
     .i_clk    (i_clk  ),
@@ -52,7 +53,6 @@ module top(
 
   idu u_idu(
     .i_ins         (ins         ),
-    .i_rst_n       (rst_n_sync  ),
     .o_rdid        (rdid        ),
     .o_rs1id       (rs1id       ),
     .o_rs2id       (rs2id       ),
@@ -63,7 +63,8 @@ module top(
     .o_lsu_opt     (lsu_opt     ),
     .o_brch        (brch        ),
     .o_jal         (jal         ),
-    .o_jalr        (jalr        )
+    .o_jalr        (jalr        ),
+    .s_id_err      (s_id_err    )
   );
 
   exu u_exu(
@@ -114,6 +115,10 @@ module top(
       $display("\n----------EBREAK: HIT !!%s!! TRAP!!---------------\n",a0zero? "GOOD":"BAD");
       $finish;
     end
+    if(rst_n_sync & |ins & s_id_err[0]) $display("\n----------ins decode error, pc = %x, opcode == %b---------------\n",pc,ins[ 6: 0] );
+    if(rst_n_sync & |ins & s_id_err[1]) $display("\n----------ins decode error, pc = %x, funct3 == %b---------------\n",pc,ins[14:12] );
+    if(rst_n_sync & |ins & s_id_err[2]) $display("\n----------ins decode error, pc = %x, funct7 == %b---------------\n",pc,ins[31:25] );
+    if(rst_n_sync & |ins & |s_id_err ) $finish; //ins docode err.
   end
 
 endmodule
