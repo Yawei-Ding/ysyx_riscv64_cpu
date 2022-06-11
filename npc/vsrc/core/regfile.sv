@@ -13,12 +13,10 @@ module regfile (
 
   reg  [`CPU_WIDTH-1:0] rf [`REG_COUNT-1:0];
 
+  // remind: there must to add reset for x[0],becasue it never be written.
   always @(posedge i_clk) begin
     if (i_wen) begin
-      if(i_waddr == `REG_ADDRW'b0)
-        rf[i_waddr] <= `CPU_WIDTH'b0;
-      else
-        rf[i_waddr] <= i_wdata;
+      rf[i_waddr] <= i_wdata;
     end
   end
 

@@ -4,6 +4,7 @@
 #include "verilated_vcd_c.h"
 
 bool rst_n_sync = false; //read from rtl by dpi-c.
+extern uint64_t dut_pc;
 
 void step_and_dump_wave(VerilatedContext* contextp,VerilatedVcdC* tfp,Vtop* top)
 {
@@ -34,11 +35,14 @@ int main(int argc, char *argv[]) {
 #ifdef DIFFTEST_ON
     top->eval();                              // update rst_n_sync
     if(top->i_clk && rst_n_sync){
-      if(!difftest_check()){                  // check last cycle reg/mem.
-        print_regs();
-        break; 
+      //printf("pc = 0x%lx\n", dut_pc);
+      if(dut_pc != 0 && dut_pc != 1){         // 0 means branch bubble, 1 means data bubble.
+        if(!difftest_check()){                // check last cycle reg/mem.
+          print_regs();
+          break; 
+        }
+        difftest_step();                      // ref step and update regs/mem.
       }
-      difftest_step();                        // ref step and update regs/mem.
     }
 #endif
     step_and_dump_wave(contextp,tfp,top);

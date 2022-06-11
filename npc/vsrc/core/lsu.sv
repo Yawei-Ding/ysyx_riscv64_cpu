@@ -1,37 +1,39 @@
 module lsu (
   input                               i_clk   ,
   input                               i_rst_n , 
-  input         [`LSU_OPT_WIDTH-1:0]  i_opt   ,   // lsu i_opt.
+  input         [2:0]                 i_lsfunc3,
+  input                               i_lden  ,
+  input                               i_sten  ,
   input         [`CPU_WIDTH-1:0]      i_addr  ,   // mem i_addr. from exu result.
   input         [`CPU_WIDTH-1:0]      i_regst ,   // for st.
   output  logic [`CPU_WIDTH-1:0]      o_regld     // for ld.
 );
 
-  wire ren = ~i_opt[0];
+  wire ren = i_lden;
   wire [`CPU_WIDTH-1:0] raddr = i_addr;
   wire [`CPU_WIDTH-1:0] rdata;
   always @(*) begin
-    case (i_opt)
-      `LSU_LB:  o_regld = {{56{rdata[ 7]}}, rdata[ 7:0]};
-      `LSU_LH:  o_regld = {{48{rdata[15]}}, rdata[15:0]};
-      `LSU_LW:  o_regld = {{32{rdata[31]}}, rdata[31:0]};
-      `LSU_LD:  o_regld = rdata;
-      `LSU_LBU: o_regld = {56'b0, rdata[ 7:0]};
-      `LSU_LHU: o_regld = {48'b0, rdata[15:0]};
-      `LSU_LWU: o_regld = {32'b0, rdata[31:0]};
-      default:  o_regld = `CPU_WIDTH'b0;
+    case (i_lsfunc3)
+      `FUNC3_LB_SB:  o_regld = {{56{rdata[ 7]}}, rdata[ 7:0]};
+      `FUNC3_LH_SH:  o_regld = {{48{rdata[15]}}, rdata[15:0]};
+      `FUNC3_LW_SW:  o_regld = {{32{rdata[31]}}, rdata[31:0]};
+      `FUNC3_LD_SD:  o_regld = rdata;
+      `FUNC3_LBU:    o_regld = {56'b0, rdata[ 7:0]};
+      `FUNC3_LHU:    o_regld = {48'b0, rdata[15:0]};
+      `FUNC3_LWU:    o_regld = {32'b0, rdata[31:0]};
+      default:       o_regld = `CPU_WIDTH'b0;
     endcase
   end
 
   logic [7:0] mask,wmask;
   logic [`CPU_WIDTH-1:0] waddr,wdata;
   always @(*) begin
-    case (i_opt)
-      `LSU_SB:  mask = 8'b0000_0001;
-      `LSU_SH:  mask = 8'b0000_0011;
-      `LSU_SW:  mask = 8'b0000_1111;
-      `LSU_SD:  mask = 8'b1111_1111;
-      default:  mask = 8'b0;
+    case (i_lsfunc3)
+      `FUNC3_LB_SB:  mask = 8'b0000_0001 & {8{i_sten}};
+      `FUNC3_LH_SH:  mask = 8'b0000_0011 & {8{i_sten}};
+      `FUNC3_LW_SW:  mask = 8'b0000_1111 & {8{i_sten}};
+      `FUNC3_LD_SD:  mask = 8'b1111_1111 & {8{i_sten}};
+      default:       mask = 8'b0;
     endcase
   end
 

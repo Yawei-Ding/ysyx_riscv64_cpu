@@ -81,17 +81,3 @@
 `define EXU_REMUW       `EXU_OPT_WIDTH'h26
 `define EXU_SLT         `EXU_OPT_WIDTH'h27
 `define EXU_SLTU        `EXU_OPT_WIDTH'h28
-
-`define LSU_OPT_WIDTH   4
-`define LSU_LB          `LSU_OPT_WIDTH'b0000    // 000 for FUNC3_LB_SB, 0 for load
-`define LSU_LH          `LSU_OPT_WIDTH'b0010    // 001 for FUNC3_LH_SH, 0 for load
-`define LSU_LW          `LSU_OPT_WIDTH'b0100    // 010 for FUNC3_LW_SW, 0 for load
-`define LSU_LD          `LSU_OPT_WIDTH'b0110    // 011 for FUNC3_LD_SD, 0 for load
-`define LSU_LBU         `LSU_OPT_WIDTH'b1000    // 100 for FUNC3_LBU,   0 for load
-`define LSU_LHU         `LSU_OPT_WIDTH'b1010    // 101 for FUNC3_LHU,   0 for load
-`define LSU_LWU         `LSU_OPT_WIDTH'b1100    // 110 for FUNC3_LWU,   0 for load
-`define LSU_SB          `LSU_OPT_WIDTH'b0001    // 000 for FUNC3_LB_SB, 1 for store
-`define LSU_SH          `LSU_OPT_WIDTH'b0011    // 001 for FUNC3_LH_SH, 1 for store
-`define LSU_SW          `LSU_OPT_WIDTH'b0101    // 010 for FUNC3_LW_SW, 1 for store
-`define LSU_SD          `LSU_OPT_WIDTH'b0111    // 011 for FUNC3_LD_SD, 1 for store
-`define LSU_NOP         `LSU_OPT_WIDTH'b1111    //1111 for nop!! "lowest bit = 0" <=> "this is an load ins"

@@ -23,8 +23,8 @@ com:${CSRC} ${VSRC}
 	@verilator ${VERILATOR_FLAGS} ${CSRC} ${VSRC} ${GCC_LDFLAGS}
 
 run:com
+	$(call git_commit, "sim RTL") # DO NOT REMOVE THIS LINE!!!
 	@${BIN} ${RUN_FLAGS}
-	#$(call git_commit, "sim RTL") # DO NOT REMOVE THIS LINE!!!
 
 wave:
 	gtkwave ${OBJ_DIR}/sim.vcd

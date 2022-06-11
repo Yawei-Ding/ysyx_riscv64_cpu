@@ -6,12 +6,15 @@ module idu(
   output logic [`REG_ADDRW-1:0]     o_rdid        , //for reg.
   output logic                      o_rdwen       , //for reg.
   output logic [`CPU_WIDTH-1:0]     o_imm         , //for exu.
-  output logic [`EXU_SEL_WIDTH-1:0] o_exu_src_sel , //for exu.
-  output logic [`EXU_OPT_WIDTH-1:0] o_exu_opt     , //for exu.
-  output logic [`LSU_OPT_WIDTH-1:0] o_lsu_opt     , //for lsu.
-  output logic [2:0]                o_brch        , //for pcu.
+  output logic [`EXU_SEL_WIDTH-1:0] o_src_sel     , //for exu.
+  output logic [`EXU_OPT_WIDTH-1:0] o_exopt       , //for exu.
+  output logic [2:0]                o_lsu_func3   , //for lsu.
+  output logic                      o_lsu_lden    , //for lsu.
+  output logic                      o_lsu_sten    , //for lsu.  
   output logic                      o_jal         , //for pcu.
   output logic                      o_jalr        , //for pcu.
+  output logic                      o_brch        , //for pcu.
+  output logic [2:0]                o_bfun3       , //for pcu.
   output logic [2:0]                s_id_err        //for sim. bit0:opc_err, bit1:func3_err, bit2:func7_err
 );
 
@@ -45,72 +48,73 @@ module idu(
       `TYPE_J:        begin                                     o_rdid = rdid;  o_rdwen = 1'b1; o_imm = {{44{i_ins[31]}},i_ins[19:12],i_ins[20],i_ins[30:21],1'b0}; end
       default: ;
     endcase
+    if(o_rdid  == `REG_ADDRW'b0) o_rdwen = 1'b0;  // x[0] can not be written.
   end
 
   //2.exu info:  /////////////////////////////////////////////////////////////////////////////////////
   always @(*) begin
-    o_exu_opt     = `EXU_ADD;
-    o_exu_src_sel = `EXU_SEL_IMM;
+    o_exopt     = `EXU_ADD;
+    o_src_sel = `EXU_SEL_IMM;
     s_id_err        = 3'b0;
     case (opcode)
-      `TYPE_S:        begin o_exu_opt = `EXU_ADD;  o_exu_src_sel = `EXU_SEL_IMM; end // M[rs1+imm] = rs2
-      `TYPE_I_EBRK:   begin                                                      end // no use, dirct break.
-      `TYPE_I_LOAD:   begin o_exu_opt = `EXU_ADD;  o_exu_src_sel = `EXU_SEL_IMM; end // rdid = M[rs1+imm]
-      `TYPE_I_JALR:   begin o_exu_opt = `EXU_ADD;  o_exu_src_sel = `EXU_SEL_PC4; end // rdid = PC+4
-      `TYPE_J:        begin o_exu_opt = `EXU_ADD;  o_exu_src_sel = `EXU_SEL_PC4; end // rdid = PC+4
-      `TYPE_U_LUI:    begin o_exu_opt = `EXU_ADD;  o_exu_src_sel = `EXU_SEL_IMM; end // rdid = x0 + imm
-      `TYPE_U_AUIPC:  begin o_exu_opt = `EXU_ADD;  o_exu_src_sel = `EXU_SEL_PCI; end // rdid = pc + imm
-      `TYPE_B:        begin                                                      end // no use for exu, idu return. nop for type_b.
+      `TYPE_S:        begin o_exopt = `EXU_ADD;  o_src_sel = `EXU_SEL_IMM; end // M[rs1+imm] = rs2
+      `TYPE_I_EBRK:   begin                                                end // no use, dirct break.
+      `TYPE_I_LOAD:   begin o_exopt = `EXU_ADD;  o_src_sel = `EXU_SEL_IMM; end // rdid = M[rs1+imm]
+      `TYPE_I_JALR:   begin o_exopt = `EXU_ADD;  o_src_sel = `EXU_SEL_PC4; end // rdid = PC+4
+      `TYPE_J:        begin o_exopt = `EXU_ADD;  o_src_sel = `EXU_SEL_PC4; end // rdid = PC+4
+      `TYPE_U_LUI:    begin o_exopt = `EXU_ADD;  o_src_sel = `EXU_SEL_IMM; end // rdid = x0 + imm
+      `TYPE_U_AUIPC:  begin o_exopt = `EXU_ADD;  o_src_sel = `EXU_SEL_PCI; end // rdid = pc + imm
+      `TYPE_B:        begin                                                end // no use for exu, idu return. nop for type_b.
       `TYPE_I:
         begin
-          o_exu_src_sel = `EXU_SEL_IMM;
+          o_src_sel = `EXU_SEL_IMM;
           case (func3)
-            `FUNC3_ADD_SUB_MUL:   o_exu_opt = `EXU_ADD; 
-            `FUNC3_SLL_MULH:      o_exu_opt = `EXU_SLL;
-            `FUNC3_SRL_SRA_DIVU:  case (func7[6:1]) 6'b000000: o_exu_opt = `EXU_SRL; 6'b010000:o_exu_opt = `EXU_SRA; default:s_id_err[2] = 1'b1; endcase
-            `FUNC3_XOR_DIV:       o_exu_opt = `EXU_XOR;
-            `FUNC3_OR_REM:        o_exu_opt = `EXU_OR ;
-            `FUNC3_AND_REMU:      o_exu_opt = `EXU_AND;
-            `FUNC3_SLT_MULHSU:    o_exu_opt = `EXU_SLT;
-            `FUNC3_SLTU_MULHU:    o_exu_opt = `EXU_SLTU;
+            `FUNC3_ADD_SUB_MUL:   o_exopt = `EXU_ADD; 
+            `FUNC3_SLL_MULH:      o_exopt = `EXU_SLL;
+            `FUNC3_SRL_SRA_DIVU:  case (func7[6:1]) 6'b000000: o_exopt = `EXU_SRL; 6'b010000:o_exopt = `EXU_SRA; default:s_id_err[2] = 1'b1; endcase
+            `FUNC3_XOR_DIV:       o_exopt = `EXU_XOR;
+            `FUNC3_OR_REM:        o_exopt = `EXU_OR ;
+            `FUNC3_AND_REMU:      o_exopt = `EXU_AND;
+            `FUNC3_SLT_MULHSU:    o_exopt = `EXU_SLT;
+            `FUNC3_SLTU_MULHU:    o_exopt = `EXU_SLTU;
             default:              s_id_err[1] = 1'b1; //func3_err
           endcase
         end
       `TYPE_I_W:
         begin
-          o_exu_src_sel = `EXU_SEL_IMM;
+          o_src_sel = `EXU_SEL_IMM;
           case (func3)
-            `FUNC3_ADD_SUB_MUL:   o_exu_opt = `EXU_ADDW;
-            `FUNC3_SLL_MULH:      o_exu_opt = `EXU_SLLW;
-            `FUNC3_SRL_SRA_DIVU:  case (func7) 7'b0000000:o_exu_opt = `EXU_SRLW; 7'b0100000: o_exu_opt = `EXU_SRAW;  default:s_id_err[2] = 1'b1; endcase
+            `FUNC3_ADD_SUB_MUL:   o_exopt = `EXU_ADDW;
+            `FUNC3_SLL_MULH:      o_exopt = `EXU_SLLW;
+            `FUNC3_SRL_SRA_DIVU:  case (func7) 7'b0000000:o_exopt = `EXU_SRLW; 7'b0100000: o_exopt = `EXU_SRAW;  default:s_id_err[2] = 1'b1; endcase
             default:              s_id_err[1] = 1'b1; //func3_err
           endcase
         end
       `TYPE_R:
         begin
-          o_exu_src_sel = `EXU_SEL_REG;
+          o_src_sel = `EXU_SEL_REG;
           case (func3)
-            `FUNC3_ADD_SUB_MUL:  case (func7) 7'b0000000:o_exu_opt = `EXU_ADD ; 7'b0000001: o_exu_opt = `EXU_MUL   ; 7'b0100000: o_exu_opt = `EXU_SUB; default:s_id_err[2] = 1'b1; endcase
-            `FUNC3_SRL_SRA_DIVU: case (func7) 7'b0000000:o_exu_opt = `EXU_SRL ; 7'b0000001: o_exu_opt = `EXU_DIVU  ; 7'b0100000: o_exu_opt = `EXU_SRA; default:s_id_err[2] = 1'b1; endcase
-            `FUNC3_SLL_MULH:     case (func7) 7'b0000000:o_exu_opt = `EXU_SLL ; 7'b0000001: o_exu_opt = `EXU_MULH  ; default:s_id_err[2] = 1'b1; endcase
-            `FUNC3_XOR_DIV:      case (func7) 7'b0000000:o_exu_opt = `EXU_XOR ; 7'b0000001: o_exu_opt = `EXU_DIV   ; default:s_id_err[2] = 1'b1; endcase
-            `FUNC3_OR_REM:       case (func7) 7'b0000000:o_exu_opt = `EXU_OR  ; 7'b0000001: o_exu_opt = `EXU_REM   ; default:s_id_err[2] = 1'b1; endcase
-            `FUNC3_AND_REMU:     case (func7) 7'b0000000:o_exu_opt = `EXU_AND ; 7'b0000001: o_exu_opt = `EXU_REMU  ; default:s_id_err[2] = 1'b1; endcase
-            `FUNC3_SLT_MULHSU:   case (func7) 7'b0000000:o_exu_opt = `EXU_SLT ; 7'b0000001: o_exu_opt = `EXU_MULHSU; default:s_id_err[2] = 1'b1; endcase
-            `FUNC3_SLTU_MULHU:   case (func7) 7'b0000000:o_exu_opt = `EXU_SLTU; 7'b0000001: o_exu_opt = `EXU_MULHU ; default:s_id_err[2] = 1'b1; endcase
+            `FUNC3_ADD_SUB_MUL:  case (func7) 7'b0000000:o_exopt = `EXU_ADD ; 7'b0000001: o_exopt = `EXU_MUL   ; 7'b0100000: o_exopt = `EXU_SUB; default:s_id_err[2] = 1'b1; endcase
+            `FUNC3_SRL_SRA_DIVU: case (func7) 7'b0000000:o_exopt = `EXU_SRL ; 7'b0000001: o_exopt = `EXU_DIVU  ; 7'b0100000: o_exopt = `EXU_SRA; default:s_id_err[2] = 1'b1; endcase
+            `FUNC3_SLL_MULH:     case (func7) 7'b0000000:o_exopt = `EXU_SLL ; 7'b0000001: o_exopt = `EXU_MULH  ; default:s_id_err[2] = 1'b1; endcase
+            `FUNC3_XOR_DIV:      case (func7) 7'b0000000:o_exopt = `EXU_XOR ; 7'b0000001: o_exopt = `EXU_DIV   ; default:s_id_err[2] = 1'b1; endcase
+            `FUNC3_OR_REM:       case (func7) 7'b0000000:o_exopt = `EXU_OR  ; 7'b0000001: o_exopt = `EXU_REM   ; default:s_id_err[2] = 1'b1; endcase
+            `FUNC3_AND_REMU:     case (func7) 7'b0000000:o_exopt = `EXU_AND ; 7'b0000001: o_exopt = `EXU_REMU  ; default:s_id_err[2] = 1'b1; endcase
+            `FUNC3_SLT_MULHSU:   case (func7) 7'b0000000:o_exopt = `EXU_SLT ; 7'b0000001: o_exopt = `EXU_MULHSU; default:s_id_err[2] = 1'b1; endcase
+            `FUNC3_SLTU_MULHU:   case (func7) 7'b0000000:o_exopt = `EXU_SLTU; 7'b0000001: o_exopt = `EXU_MULHU ; default:s_id_err[2] = 1'b1; endcase
             default:              s_id_err[1] = 1'b1; //func3_err
           endcase
         end
       `TYPE_R_W:
         begin
-          o_exu_src_sel = `EXU_SEL_REG;
+          o_src_sel = `EXU_SEL_REG;
           case (func3)
-            `FUNC3_ADD_SUB_MUL:   case (func7) 7'b0000000:o_exu_opt = `EXU_ADDW; 7'b0100000: o_exu_opt = `EXU_SUBW; 7'b0000001: o_exu_opt = `EXU_MULW ; default:s_id_err[2] = 1'b1; endcase
-            `FUNC3_SRL_SRA_DIVU:  case (func7) 7'b0000000:o_exu_opt = `EXU_SRLW; 7'b0100000: o_exu_opt = `EXU_SRAW; 7'b0000001: o_exu_opt = `EXU_DIVUW; default:s_id_err[2] = 1'b1; endcase
-            `FUNC3_XOR_DIV:       o_exu_opt  = `EXU_DIVW;
-            `FUNC3_OR_REM:        o_exu_opt  = `EXU_REMW;
-            `FUNC3_AND_REMU:      o_exu_opt  = `EXU_REMUW;
-            `FUNC3_SLL_MULH:      o_exu_opt  = `EXU_SLLW;
+            `FUNC3_ADD_SUB_MUL:   case (func7) 7'b0000000:o_exopt = `EXU_ADDW; 7'b0100000: o_exopt = `EXU_SUBW; 7'b0000001: o_exopt = `EXU_MULW ; default:s_id_err[2] = 1'b1; endcase
+            `FUNC3_SRL_SRA_DIVU:  case (func7) 7'b0000000:o_exopt = `EXU_SRLW; 7'b0100000: o_exopt = `EXU_SRAW; 7'b0000001: o_exopt = `EXU_DIVUW; default:s_id_err[2] = 1'b1; endcase
+            `FUNC3_XOR_DIV:       o_exopt  = `EXU_DIVW;
+            `FUNC3_OR_REM:        o_exopt  = `EXU_REMW;
+            `FUNC3_AND_REMU:      o_exopt  = `EXU_REMUW;
+            `FUNC3_SLL_MULH:      o_exopt  = `EXU_SLLW;
             default:              s_id_err[1] = 1'b1; //func3_err
           endcase
         end
@@ -119,19 +123,14 @@ module idu(
   end
 
   // 3.lsu:  /////////////////////////////////////////////////////////////////////////////////////////
-  always@(*)begin
-    case (opcode)
-      `TYPE_I_LOAD: o_lsu_opt = {func3,1'b0};
-      `TYPE_S:      o_lsu_opt = {func3,1'b1};
-      default:      o_lsu_opt = `LSU_NOP;
-    endcase
-  end
+  assign o_lsu_func3 = func3;
+  assign o_lsu_lden = (opcode == `TYPE_I_LOAD) ? 1'b1 : 1'b0;
+  assign o_lsu_sten = (opcode == `TYPE_S)      ? 1'b1 : 1'b0;
 
   // 4.bru: o_jump, o_jalr.  ////////////////////////////////////////////////////////////////////
-  wire branch;
-  assign branch = (opcode == `TYPE_B)? 1:0;
   assign o_jal  = (opcode == `TYPE_J)? 1:0;
   assign o_jalr = (opcode == `TYPE_I_JALR)? 1:0;
-  assign o_brch = {{3{branch}} & func3};
+  assign o_brch = (opcode == `TYPE_B)? 1:0;
+  assign o_bfun3 = func3;
 
 endmodule
