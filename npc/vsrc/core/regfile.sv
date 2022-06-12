@@ -13,12 +13,17 @@ module regfile (
 
   reg  [`CPU_WIDTH-1:0] rf [`REG_COUNT-1:0];
 
-  // remind: there must to add reset for x[0],becasue it never be written.
-  always @(posedge i_clk) begin
-    if (i_wen) begin
-      rf[i_waddr] <= i_wdata;
+  assign rf[0] = `CPU_WIDTH'b0; // x[0] must be inital, and it can never be written.
+
+  generate                      // x[1]-x[31]:
+    for(genvar i=1; i<`REG_COUNT; i=i+1 )begin: regfile
+      always @(posedge i_clk) begin
+        if (i_wen && i_waddr == i) begin
+          rf[i] <= i_wdata;
+        end
+      end
     end
-  end
+  endgenerate
 
   assign o_rdata1 = rf[i_raddr1];
   assign o_rdata2 = rf[i_raddr2];
