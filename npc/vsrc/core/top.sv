@@ -170,7 +170,6 @@ module top(
 
   lsu u_lsu(
     .i_clk     (i_clk         ),
-    .i_rst_n   (rst_n_sync    ),
     .i_lsfunc3 (exu_lsfunc3_r ),
     .i_lden    (exu_lden_r    ),
     .i_sten    (exu_sten_r    ),
