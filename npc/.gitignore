@@ -13,5 +13,4 @@
 !/vsrc/*
 !/csrc/*
 /obj_dir
-dump.vcd
 

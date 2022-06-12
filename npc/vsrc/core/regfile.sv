@@ -11,7 +11,7 @@ module regfile (
   output logic                  s_a0zero  //use for sim, good trap or bad trap.
 );
 
-  reg  [`CPU_WIDTH-1:0] rf [`REG_COUNT-1:0];
+  logic [`CPU_WIDTH-1:0] rf [`REG_COUNT-1:0];
 
   assign rf[0] = `CPU_WIDTH'b0; // x[0] must be inital, and it can never be written.
 

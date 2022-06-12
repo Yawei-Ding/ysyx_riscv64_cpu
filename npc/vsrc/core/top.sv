@@ -14,7 +14,7 @@ module top(
   // 2.cpu:  ////////////////////////////////////////////////////////
   // control signals:
   logic [`CPU_WIDTH-1:0]  pc;
-  logic pc_wen, ifid_wen, ifid_bubble, idex_bubble;
+  logic pc_wen, ifid_wen, ifid_bubble, idex_bubble, idu_ldstbp, exu_ldstbp;
 
   // simulation signals:
   logic [2:0]             s_id_err;
@@ -98,6 +98,7 @@ module top(
     .i_idu_func3   (idu_lsfunc3   ),
     .i_idu_lden    (idu_lden      ),
     .i_idu_sten    (idu_sten      ),
+    .i_idu_ldstbp  (idu_ldstbp    ),
     .i_idu_pc      (idu_pc        ),
     .s_idu_diffpc  (s_idu_diffpc  ),
     .o_exu_imm     (idu_imm_r     ),
@@ -110,13 +111,14 @@ module top(
     .o_exu_func3   (idu_lsfunc3_r ),
     .o_exu_lden    (idu_lden_r    ),
     .o_exu_sten    (idu_sten_r    ),
+    .o_exu_ldstbp  (exu_ldstbp    ),
     .o_exu_pc      (idu_pc_r      ),
     .s_exu_diffpc  (s_exu_diffpc  )
   );
 
   // 2.3 exu ///////////////////////////////////////////////
   logic [`CPU_WIDTH-1:0]      exu_exres,exu_exres_r;
-  logic [`CPU_WIDTH-1:0]      exu_rs2,exu_rs2_r;
+  logic [`CPU_WIDTH-1:0]      exu_rs2,exu_rs2_bp,exu_rs2_r;
   logic [`REG_ADDRW-1:0]      exu_rdid,exu_rdid_r;
   logic                       exu_rdwen,exu_rdwen_r;
   logic [2:0]                 exu_lsfunc3,exu_lsfunc3_r;
@@ -144,7 +146,7 @@ module top(
     .i_clk        (i_clk        ),
     .i_rst_n      (rst_n_sync   ),
     .i_exu_exres  (exu_exres    ),
-    .i_exu_rs2    (exu_rs2      ),
+    .i_exu_rs2    (exu_rs2_bp   ),
     .i_exu_rdid   (exu_rdid     ),
     .i_exu_rdwen  (exu_rdwen    ),
     .i_exu_func3  (exu_lsfunc3  ),
@@ -214,11 +216,13 @@ module top(
     .o_rd      (wbu_rd      )
   );
 
-  // 2.6 bypass for idu, regfile read/write. ////////////////
+  // 2.6 bypass, regfile read/write. ///////////////////////
   bypass u_bypass(
     .i_clk         (i_clk         ),
-    .i_rs1id       (idu_rs1id     ),
-    .i_rs2id       (idu_rs2id     ),
+    // generate rs1,rs2:
+    .i_idu_rs1id   (idu_rs1id     ),
+    .i_idu_rs2id   (idu_rs2id     ),
+    .i_idu_sten    (idu_sten      ),
     .i_exu_lden    (exu_lden      ),
     .i_exu_rdwen   (exu_rdwen     ),
     .i_exu_rdid    (exu_rdid      ),
@@ -231,11 +235,16 @@ module top(
     .i_wbu_rdwen   (wbu_rdwen     ),
     .i_wbu_rdid    (wbu_rdid      ),
     .i_wbu_rd      (wbu_rd        ),
-    .o_rs1         (idu_rs1       ),
-    .o_rs2         (idu_rs2       ),
+    .o_idu_rs1     (idu_rs1       ),
+    .o_idu_rs2     (idu_rs2       ),
     .o_pc_wen      (pc_wen        ),
     .o_ifid_wen    (ifid_wen      ),
     .o_idex_bubble (idex_bubble   ),
+    // generate regst:
+    .i_exu_rs2     (exu_rs2       ),
+    .o_idu_ldstbp  (idu_ldstbp    ),
+    .i_exu_ldstbp  (exu_ldstbp    ),
+    .o_exu_rs2     (exu_rs2_bp    ),
     .s_a0zero      (s_a0zero      )
   );
 
