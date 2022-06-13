@@ -1,4 +1,4 @@
-module stdrst(
+module stl_rst(
   input   i_clk        ,
   input   i_rst_n      , 
   output  o_rst_n_sync

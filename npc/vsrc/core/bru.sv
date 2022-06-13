@@ -23,7 +23,7 @@ module bru (
   assign sub_res = i_rs1 - i_rs2;
   assign supersub_resbit = {{1'b0,i_rs1} - {1'b0,i_rs2}}[`CPU_WIDTH];
 
-  MuxKeyWithDefault #(6,3,1) mux_branch (branch, i_bfun3, 0, {
+  stl_mux_default #(6,3,1) mux_branch (branch, i_bfun3, 0, {
     `FUNC3_BEQ ,   ~(|sub_res)           ,
     `FUNC3_BNE ,    (|sub_res)           ,
     `FUNC3_BLT ,    sub_res[`CPU_WIDTH-1],
@@ -43,10 +43,10 @@ module bru (
   assign next_pc = jump ? jump_pc : seq_pc;
 
   // 2. update pc:///////////////////////////////////////////////
-  stdreg #(
+  stl_reg #(
     .WIDTH     (`CPU_WIDTH          ),
     .RESET_VAL (`CPU_WIDTH'h80000000)
-  )u_stdreg(
+  )u_stl_reg(
     .i_clk   (i_clk   ),
     .i_rst_n (i_rst_n ),
     .i_wen   (i_pcwen ),

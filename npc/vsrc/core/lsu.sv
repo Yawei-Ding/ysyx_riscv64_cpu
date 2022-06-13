@@ -16,7 +16,7 @@ module lsu (
   assign ren = i_lden;
   assign raddr = i_addr;
 
-  MuxKeyWithDefault #(7, 3, `CPU_WIDTH) mux_rdata (o_regld, i_lsfunc3, `CPU_WIDTH'b0, {
+  stl_mux_default #(7, 3, `CPU_WIDTH) mux_rdata (o_regld, i_lsfunc3, `CPU_WIDTH'b0, {
     `FUNC3_LB_SB,   {{56{rdata[ 7]}}, rdata[ 7:0]},
     `FUNC3_LH_SH,   {{48{rdata[15]}}, rdata[15:0]},
     `FUNC3_LW_SW,   {{32{rdata[31]}}, rdata[31:0]},
@@ -30,7 +30,7 @@ module lsu (
   assign waddr = i_addr;
   assign wdata = i_regst;
 
-  MuxKeyWithDefault #(4, 3, 8) mux_wmask (wmask, i_lsfunc3, 8'b0, {
+  stl_mux_default #(4, 3, 8) mux_wmask (wmask, i_lsfunc3, 8'b0, {
     `FUNC3_LB_SB, 8'b0000_0001 & {8{i_sten}},
     `FUNC3_LH_SH, 8'b0000_0011 & {8{i_sten}},
     `FUNC3_LW_SW, 8'b0000_1111 & {8{i_sten}},

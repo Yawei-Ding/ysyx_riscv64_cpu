@@ -11,14 +11,14 @@ module exu (
 
   logic [`CPU_WIDTH-1:0] src1,src2;
 
-  MuxKeyWithDefault #(1<<`EXU_SEL_WIDTH, `EXU_SEL_WIDTH, `CPU_WIDTH) mux_src1 (src1, i_src_sel, `CPU_WIDTH'b0, {
+  stl_mux_default #(1<<`EXU_SEL_WIDTH, `EXU_SEL_WIDTH, `CPU_WIDTH) mux_src1 (src1, i_src_sel, `CPU_WIDTH'b0, {
     `EXU_SEL_REG, i_rs1,
     `EXU_SEL_IMM, i_rs1,
     `EXU_SEL_PC4, i_pc,
     `EXU_SEL_PCI, i_pc
   });
 
-  MuxKeyWithDefault #(1<<`EXU_SEL_WIDTH, `EXU_SEL_WIDTH, `CPU_WIDTH) mux_src2 (src2, i_src_sel, `CPU_WIDTH'b0, {
+  stl_mux_default #(1<<`EXU_SEL_WIDTH, `EXU_SEL_WIDTH, `CPU_WIDTH) mux_src2 (src2, i_src_sel, `CPU_WIDTH'b0, {
     `EXU_SEL_REG, i_rs2,
     `EXU_SEL_IMM, i_imm,
     `EXU_SEL_PC4, `CPU_WIDTH'h4,

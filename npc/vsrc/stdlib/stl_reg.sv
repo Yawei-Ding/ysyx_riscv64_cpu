@@ -1,4 +1,4 @@
-module stdreg #(
+module stl_reg #(
   WIDTH = 1,
   RESET_VAL = 0
 )(

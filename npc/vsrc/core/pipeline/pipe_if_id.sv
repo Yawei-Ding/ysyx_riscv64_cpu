@@ -24,7 +24,7 @@ module pipe_if_id (
   assign t_ifu_ins    = i_bubble ? `INS_WIDTH'h13 : i_ifu_ins;  // 0x13 == ADDI x0,x0,0 == nop.
   assign t_ifu_diffpc = i_bubble ? `CPU_WIDTH'b0  : i_ifu_pc;   // use for sim, branch bubble diffpc == 0;
 
-  stdreg #(
+  stl_reg #(
     .WIDTH      (2*`CPU_WIDTH+`INS_WIDTH),
     .RESET_VAL  (0                    )
   ) if_id_reg(

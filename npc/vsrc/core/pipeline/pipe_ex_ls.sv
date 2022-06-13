@@ -25,7 +25,7 @@ module pipe_ex_ls (
   output  [`CPU_WIDTH-1:0]      s_lsu_diffpc
 );
 
-  stdreg #(
+  stl_reg #(
     .WIDTH      (3*`CPU_WIDTH+`REG_ADDRW+6),
     .RESET_VAL  (0       )
   ) if_id_reg(

@@ -64,7 +64,7 @@ module pipe_id_ex (
   assign t_idu_pc      = i_idu_pc ;
   assign t_idu_diffpc  = i_bubble ? `CPU_WIDTH'b1 : s_idu_diffpc  ; // use for sim, data bubble diffpc == 1;
 
-  stdreg #(
+  stl_reg #(
     .WIDTH      (5*`CPU_WIDTH+`REG_ADDRW+7+`EXU_SEL_WIDTH+`EXU_OPT_WIDTH),
     .RESET_VAL  (0       )
   ) if_id_reg(

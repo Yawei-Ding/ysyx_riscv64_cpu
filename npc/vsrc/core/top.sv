@@ -5,7 +5,7 @@ module top(
 );
   // 1.rst : ////////////////////////////////////////////////////////
   logic rst_n_sync;
-  stdrst u_stdrst(
+  stl_rst u_stl_rst(
   	.i_clk        (i_clk      ),
     .i_rst_n      (i_rst_n    ),
     .o_rst_n_sync (rst_n_sync )
