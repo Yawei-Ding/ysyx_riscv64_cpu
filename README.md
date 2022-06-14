@@ -15,10 +15,10 @@
 ## 代码结构
 
 ```c
-├── abstract-machine		// high level software.
-├── nemu					// riscv64IM simulation model, use for RTL difftest.
-└── npc						// new processor core, riscv64IM RTL core.
-    ├── csrc				// verilator simulation source code.
+├── abstract-machine      // high level software.
+├── nemu                  // riscv64IM simulation model, use for RTL difftest.
+└── npc                   // new processor core, riscv64IM RTL core.
+    ├── csrc              // verilator simulation source code.
     │   ├── difftest.cpp
     │   ├── dpic.cpp
     │   ├── include
@@ -28,8 +28,8 @@
     │   ├── mem.cpp
     │   └── reg.cpp
     ├── Makefile
-    └── vsrc				// rtl source code.
-        ├── core			// cpu core source code.
+    └── vsrc              // rtl source code.
+        ├── core          // cpu core source code.
         │   ├── bru.sv
         │   ├── bypass.sv
         │   ├── config.sv
@@ -45,15 +45,15 @@
         │   ├── regfile.sv
         │   ├── top.sv
         │   └── wbu.sv
-        ├── mems			// mem source code.
-        ├── soc_top.sv		// soc top code.
-        └── stdlib			// standard library for whole soc.
-            ├── stdmux
-            │   ├── MuxKeyInternal.sv
-            │   ├── MuxKey.sv
-            │   └── MuxKeyWithDefault.sv
-            ├── stdreg.sv
-            └── stdrst.sv
+        ├── mems          // mem source code.
+        ├── soc_top.sv    // soc top code.
+        └── stdlib        // standard library for whole soc.
+          ├── stl_mux
+          │   ├── stl_mux_default.sv
+          │   ├── stl_mux_internal.sv
+          │   └── stl_mux.sv
+          ├── stl_reg.sv
+          └── stl_rst.sv
 ```
 
 ## 流水线处理
@@ -70,7 +70,7 @@
 
 Q&A：
 
-1. 我这里采用的是方式2，主要基于三点考虑：
+1. 我这里采用的是方式1，主要基于三点考虑：
 
    1. ALU这一级的组合逻辑有乘法，如果再加旁路逻辑，那么cirtical path的时延就太高了。
    2. 如果使用方式2，那么还需要在ex阶段重新访问一次regfile读reg，属实是挺烦的。
