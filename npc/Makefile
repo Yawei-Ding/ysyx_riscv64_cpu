@@ -8,14 +8,15 @@ SEARCHPATH := ./vsrc/core
 VERILATOR_FLAGS += -Wall --trace --cc --exe --build
 VERILATOR_FLAGS += -I${SEARCHPATH}
 VERILATOR_FLAGS += --top ${TOP_MODULE}
-GCC_LDFLAGS := -LDFLAGS -ldl
+GCC_LDFLAGS := -CFLAGS -g -LDFLAGS -ldl								# -g for gdb, -ldl for dynamic link(nemu difftest).
 
 # 3.run info:
-OBJ_DIR := ./obj_dir
-BIN := ${OBJ_DIR}/V${TOP_MODULE}
-IMG ?= ../am-kernels/tests/cpu-tests/build/dummy-riscv64-npc.bin
-DIFFTEST := ${NEMU_HOME}/build/riscv64-nemu-interpreter-so
-RUN_FLAGS := --img=${IMG} --diff=${DIFFTEST}
+IMG ?= ../am-kernels/tests/cpu-tests/build/dummy-riscv64-npc.bin#	# program img, run on npc.
+DIFFTEST := ${NEMU_HOME}/build/riscv64-nemu-interpreter-so#			# nemu img, use for difftest.
+OBJ_DIR := ./obj_dir# 												# npc obj path.
+BIN := ${OBJ_DIR}/V${TOP_MODULE}#									# npc obj bin.
+RUN_FLAGS := --img=${IMG} --diff=${DIFFTEST}#						# npc main args.
+NPC_EXEC := ${BIN} ${RUN_FLAGS}#									# npc bin + args.
 
 .PHONY:sim wave clean
 
@@ -23,8 +24,12 @@ com:${CSRC} ${VSRC}
 	@verilator ${VERILATOR_FLAGS} ${CSRC} ${VSRC} ${GCC_LDFLAGS}
 
 run:com
-	$(call git_commit, "sim RTL") # DO NOT REMOVE THIS LINE!!!
-	@${BIN} ${RUN_FLAGS}
+	#$(call git_commit, "sim RTL") # DO NOT REMOVE THIS LINE!!!
+	${NPC_EXEC}
+
+gdb:com ${DIFFTEST}
+	$(call git_commit, "gdb RTL") # DO NOT REMOVE THIS LINE!!!
+	@gdb --silent -s ${BIN} --args ${NPC_EXEC}
 
 wave:
 	gtkwave ${OBJ_DIR}/sim.vcd

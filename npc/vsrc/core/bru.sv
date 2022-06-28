@@ -28,7 +28,7 @@ module bru (
     `FUNC3_BNE ,    (|sub_res)           ,
     `FUNC3_BLT ,    sub_res[`CPU_WIDTH-1],
     `FUNC3_BGE ,   ~sub_res[`CPU_WIDTH-1],
-    `FUNC3_BLTU,    supersub_resbit       ,
+    `FUNC3_BLTU,    supersub_resbit      ,
     `FUNC3_BGEU,   ~supersub_resbit
   });
 
