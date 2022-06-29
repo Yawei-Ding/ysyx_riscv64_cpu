@@ -28,7 +28,7 @@ module top(
   assign ifu_pc = pc;
 
   ifu u_ifu(
-  	.i_rst_n (rst_n_sync),
+    .i_rst_n (rst_n_sync),
     .i_pc    (ifu_pc    ),
     .o_ins   (ifu_ins   )
   );
@@ -249,7 +249,6 @@ module top(
   );
 
   // 2.7 bru ///////////////////////////////////////////////
-
   bru u_bru(
     .i_clk        (i_clk       ),
     .i_rst_n      (rst_n_sync  ),
@@ -265,7 +264,6 @@ module top(
     .o_pc         (pc          ),
     .o_ifid_bubble(ifid_bubble )
   );
-
 
   // 3.sim:  ////////////////////////////////////////////////////////
   // 3.1 update rst state and wb stage pc to sim.
