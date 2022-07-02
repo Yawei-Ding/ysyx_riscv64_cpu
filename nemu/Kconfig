@@ -159,6 +159,10 @@ config MTRACE
     bool "Enable memory tracer."
     default n
     
+config ETRACE
+    bool "Enable interrupt/exception tracer."
+    default n
+    
 config WATCHPOINT
   bool "Enable watch point tracer."
   default n
