@@ -47,6 +47,7 @@ intptr_t _syscall_(intptr_t type, intptr_t a0, intptr_t a1, intptr_t a2) {
   register intptr_t _gpr4 asm (GPR4) = a2;
   register intptr_t ret asm (GPRx);
   asm volatile (SYSCALL : "=r" (ret) : "r"(_gpr1), "r"(_gpr2), "r"(_gpr3), "r"(_gpr4));
+  // for riscv, it is:  asm volatile ("ecall" : "=r" (a0) : "r"(a7), "r"(a0), "r"(a1), "r"(a2));
   return ret;
 }
 
@@ -61,13 +62,24 @@ int _open(const char *path, int flags, mode_t mode) {
 }
 
 int _write(int fd, void *buf, size_t count) {
-  _exit(SYS_write);
+  _syscall_(SYS_write, fd,(intptr_t)buf, count);
   return 0;
 }
 
+extern char end;
+intptr_t program_break = (intptr_t)&end;
 void *_sbrk(intptr_t increment) {
-  return (void *)-1;
+  intptr_t old_probreak = program_break;
+  intptr_t new_probreak = program_break + increment;
+  if(!_syscall_(SYS_brk, new_probreak, 0, 0)){
+    program_break = new_probreak;
+    return (void *)old_probreak;
+  }
+  else{
+    return (void *)-1;
+  }
 }
+
 
 int _read(int fd, void *buf, size_t count) {
   _exit(SYS_read);

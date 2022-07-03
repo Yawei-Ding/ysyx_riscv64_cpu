@@ -1,7 +1,9 @@
 #include <common.h>
+#include "syscall.h"
 
 static Context* do_event(Event e, Context* c) {
   switch (e.event) {
+    case EVENT_SYSCALL: do_syscall(c); break;
     case EVENT_YIELD: printf("irq event yield.\n"); break;
     case EVENT_ERROR: printf("irq event error.\n"); break;
     default: panic("Unhandled event ID = %d", e.event); break;
