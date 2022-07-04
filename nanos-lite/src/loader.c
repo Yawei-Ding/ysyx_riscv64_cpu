@@ -1,6 +1,7 @@
 #include <proc.h>
 #include <elf.h>
 #include <stdio.h>
+#include "fs.h"
 
 #ifdef __LP64__
 # define Elf_Ehdr Elf64_Ehdr
@@ -22,25 +23,32 @@
 # error Unsupported ISA
 #endif
 
-size_t ramdisk_read(void *buf, size_t offset, size_t len);
 static uintptr_t loader(PCB *pcb, const char *filename) {
 
-  // 1. read elf head:
-  Elf_Ehdr *elf_head = (Elf_Ehdr*)malloc(sizeof(Elf_Ehdr)); 
-  ramdisk_read(elf_head,0,sizeof(Elf_Ehdr));
-  assert(*(uint32_t *)elf_head->e_ident == 0x464c457f);  // check reading file is elf.
-  assert(elf_head->e_machine == EXPECT_TYPE);            // check architecture.
+  // 1. open elf files, get file id:
+  int fd = fs_open(filename,0,0);
 
-  // 2. read program headers, remeber pro_head is a struct pointer!!
-  Elf_Phdr *pro_head = (Elf_Phdr*)malloc(sizeof(Elf_Phdr)*elf_head->e_phnum); 
-  ramdisk_read(pro_head,sizeof(Elf_Ehdr),sizeof(Elf_Phdr)*elf_head->e_phnum);
+  // 2. read elf head:
+  Elf_Ehdr *elf_head = (Elf_Ehdr*)malloc(sizeof(Elf_Ehdr));
+  if(fs_read(fd,elf_head,sizeof(Elf_Ehdr)) == -1) assert(0);
+  // ramdisk_read(elf_head,0,sizeof(Elf_Ehdr));
+  assert(*(uint32_t *)(elf_head->e_ident) == 0x464c457f);  // check reading file is elf.
+  assert(elf_head->e_machine == EXPECT_TYPE);              // check architecture.
 
+  // 3. read program headers, remeber pro_head is a struct pointer!!
+  Elf_Phdr *pro_head = (Elf_Phdr*)malloc(sizeof(Elf_Phdr)*elf_head->e_phnum);
+  if(fs_read(fd, pro_head,sizeof(Elf_Phdr)*elf_head->e_phnum) == -1)  assert(0);
+  // ramdisk_read((void*)(p->p_vaddr), p->p_offset, p->p_filesz);
+
+  // 4. read text/rodata/data/bss segment to mem:
   for(Elf_Phdr *p=pro_head; p<pro_head+elf_head->e_phnum; p++){
 
-    // load text/rodata/data segment into mem:
-    ramdisk_read((void*)(p->p_vaddr), p->p_offset, p->p_filesz);
+    // 4.1 load text/rodata/data segment into mem:
+    if(fs_lseek(fd,p->p_offset,SEEK_SET) == -1) assert(0);
+    if(fs_read(fd, (void*)(p->p_vaddr),p->p_filesz) == -1)  assert(0);
+    // ramdisk_read((void*)(p->p_vaddr), p->p_offset, p->p_filesz);
     
-    // init bss segment(set to zero):
+    // 4.2 init bss segment(set to zero):
     memset((void *)(p->p_vaddr+p->p_filesz), 0, p->p_memsz - p->p_filesz);
   }
 

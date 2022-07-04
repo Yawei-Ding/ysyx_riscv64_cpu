@@ -34,3 +34,68 @@ static Finfo file_table[] __attribute__((used)) = {
 void init_fs() {
   // TODO: initialize the size of /dev/fb
 }
+
+#define TABLE_LEN (int)(sizeof(file_table) / sizeof(Finfo))
+
+size_t open_offset = 0;
+
+int fs_open(const char *pathname, int flags, int mode){
+  for(int i=0; i<TABLE_LEN; i++){
+    if(strcmp(file_table[i].name,pathname)==0){
+      open_offset = 0;
+      return i;
+    }
+  }
+  assert(0); // program should not reach this line!
+  return -1;
+}
+
+size_t fs_read(int fd, void *buf, size_t len){
+  size_t f_size = file_table[fd].size;
+  if(open_offset >= f_size){
+    return -1;
+  }
+  if(open_offset + len > f_size){
+    len = f_size - open_offset;
+  }
+  ramdisk_read(buf, file_table[fd].disk_offset + open_offset, len);
+  open_offset = open_offset + len;
+  return len;
+}
+
+size_t fs_write(int fd, const void *buf, size_t len){
+  if( fd == 1 || fd == 2 ){ // 1==stdout, 2==stderr.
+    int i = 0;
+    for(i=0; i<len; i++){
+      putch(*((uint8_t*)buf+i));
+    }
+    return i;
+  }
+  else{
+    size_t f_size = file_table[fd].size;
+    if(open_offset + len <= f_size){
+      ramdisk_write(buf, file_table[fd].disk_offset + open_offset, len);
+      open_offset = open_offset + len;
+      return len;
+    }
+    else{
+      return -1;
+    }
+  }
+}
+
+size_t fs_lseek(int fd, size_t offset, int whence){
+  size_t f_size = file_table[fd].size;
+  switch (whence)
+  {
+    case SEEK_SET: if(offset <= f_size) {open_offset = offset; return open_offset;} else{ return -1;} break;
+    case SEEK_CUR: if(open_offset + offset <= f_size) {open_offset = open_offset + offset; return open_offset;} else{ return -1;} break; 
+    case SEEK_END: if((signed)offset <= 0)  { open_offset = f_size + offset; return open_offset;} else { return -1; } break;
+    default: panic("check your input whence for lseek"); break;
+  }
+}
+
+int fs_close(int fd){
+  open_offset = 0;
+  return 0;
+}
