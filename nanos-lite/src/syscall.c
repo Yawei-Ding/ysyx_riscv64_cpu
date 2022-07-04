@@ -1,7 +1,7 @@
 #include <common.h>
 #include <fs.h>
 
-#define strace 1 // close strace by comment this line.
+//#define strace 1 // close strace by comment this line.
 
 void sys_exit(Context *c);
 void sys_yield(Context *c);
@@ -11,6 +11,7 @@ void sys_write(Context *c);
 void sys_close(Context *c);
 void sys_lseek(Context *c);
 void sys_brk(Context *c);
+void sys_gettimeofday(Context *c);
 char* get_syscall_name(uintptr_t type);
 
 
@@ -22,26 +23,26 @@ void do_syscall(Context *c) {
 #endif 
 
   switch (type) {
-    case SYS_exit         : sys_exit(c);  break;
-    case SYS_yield        : sys_yield(c); break;
-    case SYS_open         : sys_open(c);  break;
-    case SYS_read         : sys_read(c);  break;
-    case SYS_write        : sys_write(c); break;
-    case SYS_kill         :               break;
-    case SYS_getpid       :               break;
-    case SYS_close        : sys_close(c); break;
-    case SYS_lseek        : sys_lseek(c); break;
-    case SYS_brk          : sys_brk(c);   break;
-    case SYS_fstat        :               break;
-    case SYS_time         :               break;
-    case SYS_signal       :               break;
-    case SYS_execve       :               break;
-    case SYS_fork         :               break;
-    case SYS_link         :               break;
-    case SYS_unlink       :               break;
-    case SYS_wait         :               break;
-    case SYS_times        :               break;
-    case SYS_gettimeofday :               break;
+    case SYS_exit         : sys_exit(c);          break;
+    case SYS_yield        : sys_yield(c);         break;
+    case SYS_open         : sys_open(c);          break;
+    case SYS_read         : sys_read(c);          break;
+    case SYS_write        : sys_write(c);         break;
+    case SYS_kill         :                       break;
+    case SYS_getpid       :                       break;
+    case SYS_close        : sys_close(c);         break;
+    case SYS_lseek        : sys_lseek(c);         break;
+    case SYS_brk          : sys_brk(c);           break;
+    case SYS_fstat        :                       break;
+    case SYS_time         :                       break;
+    case SYS_signal       :                       break;
+    case SYS_execve       :                       break;
+    case SYS_fork         :                       break;
+    case SYS_link         :                       break;
+    case SYS_unlink       :                       break;
+    case SYS_wait         :                       break;
+    case SYS_times        :                       break;
+    case SYS_gettimeofday : sys_gettimeofday(c);  break;
     default: panic("Unhandled syscall ID = %d", type);
   }
 
@@ -93,6 +94,12 @@ void sys_brk(Context *c){
   c->GPRx = 0;
 }
 
+void sys_gettimeofday(Context *c){
+  AM_TIMER_UPTIME_T uptime = io_read(AM_TIMER_UPTIME);
+  c->GPRx = uptime.us;
+}
+
+#ifdef strace
 char* get_syscall_name(uintptr_t type){
   static char SyscallInfo[20];
   switch (type) {
@@ -120,3 +127,4 @@ char* get_syscall_name(uintptr_t type){
   }
   return SyscallInfo;
 }
+#endif

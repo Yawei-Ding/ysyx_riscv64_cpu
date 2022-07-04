@@ -1,5 +1,9 @@
 #include <fs.h>
 
+size_t ramdisk_read(void *buf, size_t offset, size_t len);
+size_t ramdisk_write(const void *buf, size_t offset, size_t len);
+size_t serial_write(const void *buf, size_t offset, size_t len);
+
 typedef size_t (*ReadFn) (void *buf, size_t offset, size_t len);
 typedef size_t (*WriteFn) (const void *buf, size_t offset, size_t len);
 
@@ -26,8 +30,8 @@ size_t invalid_write(const void *buf, size_t offset, size_t len) {
 /* This is the information about all files in disk. */
 static Finfo file_table[] __attribute__((used)) = {
   [FD_STDIN]  = {"stdin", 0, 0, invalid_read, invalid_write},
-  [FD_STDOUT] = {"stdout", 0, 0, invalid_read, invalid_write},
-  [FD_STDERR] = {"stderr", 0, 0, invalid_read, invalid_write},
+  [FD_STDOUT] = {"stdout", 0, 0, invalid_read, serial_write},
+  [FD_STDERR] = {"stderr", 0, 0, invalid_read, serial_write},
 #include "files.h"
 };
 
@@ -68,12 +72,9 @@ size_t fs_read(int fd, void *buf, size_t len){
 }
 
 size_t fs_write(int fd, const void *buf, size_t len){
-  if( fd == 1 || fd == 2 ){ // 1==stdout, 2==stderr.
-    int i = 0;
-    for(i=0; i<len; i++){
-      putch(*((uint8_t*)buf+i));
-    }
-    return i;
+  if(file_table[fd].write != NULL){
+    (file_table[fd].write)(buf,0,len);
+    return len;
   }
   else{
     size_t f_size = file_table[fd].size;
