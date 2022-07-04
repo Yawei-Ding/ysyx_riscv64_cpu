@@ -46,8 +46,15 @@ void do_syscall(Context *c) {
   }
 
 #ifdef strace
-  printf("strace detect syscall: %s, ",get_syscall_name(type));
-  printf("input regs a0=0x%lx, a1=0x%lx, a2=0x%lx, output a0=0x%lx.\n",a[0],a[1],a[2],c->GPRx);
+  char* getFinfoName(int i);
+  if(type == SYS_open|| type == SYS_read || type == SYS_write || type == SYS_close || type == SYS_lseek){
+    if(type == SYS_open) printf("strace detect file %s is doing %s :",a[0], get_syscall_name(type));
+    else printf("strace detect file %s is doing %s :",getFinfoName(a[0]), get_syscall_name(type));
+  }
+  else{
+    printf("strace detect syscall: %s, ",get_syscall_name(type));
+  }
+  printf("input regs a0=0x%lx, a1=0x%lx, a2=0x%lx, return value a0=0x%lx.\n",a[0],a[1],a[2],c->GPRx);
 #endif
 
 }
@@ -89,26 +96,26 @@ void sys_brk(Context *c){
 char* get_syscall_name(uintptr_t type){
   static char SyscallInfo[20];
   switch (type) {
-    case SYS_exit         : strcpy(SyscallInfo,"SYS_exit");         break;
-    case SYS_yield        : strcpy(SyscallInfo,"SYS_yield");        break;
-    case SYS_open         : strcpy(SyscallInfo,"SYS_open");         break;
-    case SYS_read         : strcpy(SyscallInfo,"SYS_read");         break;
-    case SYS_write        : strcpy(SyscallInfo,"SYS_write");        break;
-    case SYS_kill         : strcpy(SyscallInfo,"SYS_kill");         break;
-    case SYS_getpid       : strcpy(SyscallInfo,"SYS_getpid");       break;
-    case SYS_close        : strcpy(SyscallInfo,"SYS_close");        break;
-    case SYS_lseek        : strcpy(SyscallInfo,"SYS_lseek");        break;
-    case SYS_brk          : strcpy(SyscallInfo,"SYS_brk");          break;
-    case SYS_fstat        : strcpy(SyscallInfo,"SYS_fstat");        break;
-    case SYS_time         : strcpy(SyscallInfo,"SYS_time");         break;
-    case SYS_signal       : strcpy(SyscallInfo,"SYS_signal");       break;
-    case SYS_execve       : strcpy(SyscallInfo,"SYS_execve");       break;
-    case SYS_fork         : strcpy(SyscallInfo,"SYS_fork");         break;
-    case SYS_link         : strcpy(SyscallInfo,"SYS_link");         break;
-    case SYS_unlink       : strcpy(SyscallInfo,"SYS_unlink");       break;
-    case SYS_wait         : strcpy(SyscallInfo,"SYS_wait");         break;
-    case SYS_times        : strcpy(SyscallInfo,"SYS_times");        break;
-    case SYS_gettimeofday : strcpy(SyscallInfo,"SYS_gettimeofday"); break;
+    case SYS_exit         : strcpy(SyscallInfo,"sys_exit");         break;
+    case SYS_yield        : strcpy(SyscallInfo,"sys_yield");        break;
+    case SYS_open         : strcpy(SyscallInfo,"sys_open");         break;
+    case SYS_read         : strcpy(SyscallInfo,"sys_read");         break;
+    case SYS_write        : strcpy(SyscallInfo,"sys_write");        break;
+    case SYS_kill         : strcpy(SyscallInfo,"sys_kill");         break;
+    case SYS_getpid       : strcpy(SyscallInfo,"sys_getpid");       break;
+    case SYS_close        : strcpy(SyscallInfo,"sys_close");        break;
+    case SYS_lseek        : strcpy(SyscallInfo,"sys_lseek");        break;
+    case SYS_brk          : strcpy(SyscallInfo,"sys_brk");          break;
+    case SYS_fstat        : strcpy(SyscallInfo,"sys_fstat");        break;
+    case SYS_time         : strcpy(SyscallInfo,"sys_time");         break;
+    case SYS_signal       : strcpy(SyscallInfo,"sys_signal");       break;
+    case SYS_execve       : strcpy(SyscallInfo,"sys_execve");       break;
+    case SYS_fork         : strcpy(SyscallInfo,"sys_fork");         break;
+    case SYS_link         : strcpy(SyscallInfo,"sys_link");         break;
+    case SYS_unlink       : strcpy(SyscallInfo,"sys_unlink");       break;
+    case SYS_wait         : strcpy(SyscallInfo,"sys_wait");         break;
+    case SYS_times        : strcpy(SyscallInfo,"sys_times");        break;
+    case SYS_gettimeofday : strcpy(SyscallInfo,"sys_gettimeofday"); break;
     default: panic("Unhandled syscall ID = %d", type);
   }
   return SyscallInfo;

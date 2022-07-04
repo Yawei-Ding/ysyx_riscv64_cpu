@@ -35,6 +35,10 @@ void init_fs() {
   // TODO: initialize the size of /dev/fb
 }
 
+char* getFinfoName(int i){
+  return file_table[i].name;
+}
+
 #define TABLE_LEN (int)(sizeof(file_table) / sizeof(Finfo))
 
 size_t open_offset = 0;
