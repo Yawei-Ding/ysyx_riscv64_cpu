@@ -78,14 +78,15 @@ size_t fs_write(int fd, const void *buf, size_t len){
   }
   else{
     size_t f_size = file_table[fd].size;
-    if(open_offset + len <= f_size){
-      ramdisk_write(buf, file_table[fd].disk_offset + open_offset, len);
-      open_offset = open_offset + len;
-      return len;
-    }
-    else{
+    if(open_offset >= f_size){
       return -1;
     }
+    if(open_offset + len > f_size){
+      len = f_size - open_offset;
+    }
+    ramdisk_write(buf, file_table[fd].disk_offset + open_offset, len);
+    open_offset = open_offset + len;
+    return len;
   }
 }
 
