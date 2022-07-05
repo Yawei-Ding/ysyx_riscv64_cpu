@@ -3,6 +3,7 @@
 size_t ramdisk_read(void *buf, size_t offset, size_t len);
 size_t ramdisk_write(const void *buf, size_t offset, size_t len);
 size_t serial_write(const void *buf, size_t offset, size_t len);
+size_t events_read(void *buf, size_t offset, size_t len);
 
 typedef size_t (*ReadFn) (void *buf, size_t offset, size_t len);
 typedef size_t (*WriteFn) (const void *buf, size_t offset, size_t len);
@@ -15,7 +16,7 @@ typedef struct {
   WriteFn write;
 } Finfo;
 
-enum {FD_STDIN, FD_STDOUT, FD_STDERR, FD_FB};
+enum {FD_STDIN, FD_STDOUT, FD_STDERR, FD_KEREVENT, FD_FB};
 
 size_t invalid_read(void *buf, size_t offset, size_t len) {
   panic("should not reach here");
@@ -32,6 +33,7 @@ static Finfo file_table[] __attribute__((used)) = {
   [FD_STDIN]  = {"stdin", 0, 0, invalid_read, invalid_write},
   [FD_STDOUT] = {"stdout", 0, 0, invalid_read, serial_write},
   [FD_STDERR] = {"stderr", 0, 0, invalid_read, serial_write},
+  [FD_KEREVENT]={"/dev/events",0,0,events_read,serial_write},
 #include "files.h"
 };
 
@@ -54,27 +56,30 @@ int fs_open(const char *pathname, int flags, int mode){
       return i;
     }
   }
-  assert(0); // program should not reach this line!
   return -1;
 }
 
 size_t fs_read(int fd, void *buf, size_t len){
-  size_t f_size = file_table[fd].size;
-  if(open_offset >= f_size){
-    return -1;
+  if(file_table[fd].read != NULL){
+    return (file_table[fd].read)(buf,0,len);
   }
-  if(open_offset + len > f_size){
-    len = f_size - open_offset;
+  else{
+    size_t f_size = file_table[fd].size;
+    if(open_offset >= f_size){
+      return -1;
+    }
+    if(open_offset + len > f_size){
+      len = f_size - open_offset;
+    }
+    ramdisk_read(buf, file_table[fd].disk_offset + open_offset, len);
+    open_offset = open_offset + len;
+    return len;
   }
-  ramdisk_read(buf, file_table[fd].disk_offset + open_offset, len);
-  open_offset = open_offset + len;
-  return len;
 }
 
 size_t fs_write(int fd, const void *buf, size_t len){
   if(file_table[fd].write != NULL){
-    (file_table[fd].write)(buf,0,len);
-    return len;
+    return (file_table[fd].write)(buf,0,len);
   }
   else{
     size_t f_size = file_table[fd].size;
