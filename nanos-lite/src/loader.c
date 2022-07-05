@@ -52,6 +52,9 @@ static uintptr_t loader(PCB *pcb, const char *filename) {
     memset((void *)(p->p_vaddr+p->p_filesz), 0, p->p_memsz - p->p_filesz);
   }
 
+  free(elf_head);
+  free(pro_head);
+
   return elf_head->e_entry;
 }
 
