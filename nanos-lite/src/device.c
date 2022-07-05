@@ -37,10 +37,29 @@ size_t events_read(void *buf, size_t offset, size_t len) {
 }
 
 size_t dispinfo_read(void *buf, size_t offset, size_t len) {
+  // eg: WIDTH : 640. HEIGHT:480
+  AM_GPU_CONFIG_T dispinfo = io_read(AM_GPU_CONFIG);
+  snprintf(buf,len,"WIDTH:%d\nHEIGHT:%d\n",dispinfo.width,dispinfo.height);
   return 0;
 }
 
+extern size_t open_offset;
 size_t fb_write(const void *buf, size_t offset, size_t len) {
+
+  AM_GPU_CONFIG_T dispinfo = io_read(AM_GPU_CONFIG);
+
+  AM_GPU_FBDRAW_T ctl;
+  ctl.x = offset % dispinfo.width;
+  ctl.y = offset / dispinfo.width;
+  ctl.pixels = (void *)buf;
+  ctl.w = len >> 32;                // high 32bit.
+  ctl.h = len & 0x00000000FFFFFFFF; // low 32bit.
+  ctl.sync = true;
+
+  io_write(AM_GPU_FBDRAW, ctl.x, ctl.y, ctl.pixels, ctl.w, ctl.h, ctl.sync);
+  open_offset = offset + len;
+
+  printf("GPU trace position (x,y)=(%d,%d), size (w,h)=(%d,%d), sync=%d\n",ctl.x, ctl.y, ctl.w, ctl.h, ctl.sync);
   return 0;
 }
 

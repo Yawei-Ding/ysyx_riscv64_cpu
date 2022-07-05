@@ -4,6 +4,8 @@ size_t ramdisk_read(void *buf, size_t offset, size_t len);
 size_t ramdisk_write(const void *buf, size_t offset, size_t len);
 size_t serial_write(const void *buf, size_t offset, size_t len);
 size_t events_read(void *buf, size_t offset, size_t len);
+size_t dispinfo_read(void *buf, size_t offset, size_t len);
+size_t fb_write(const void *buf, size_t offset, size_t len);
 
 typedef size_t (*ReadFn) (void *buf, size_t offset, size_t len);
 typedef size_t (*WriteFn) (const void *buf, size_t offset, size_t len);
@@ -16,7 +18,7 @@ typedef struct {
   WriteFn write;
 } Finfo;
 
-enum {FD_STDIN, FD_STDOUT, FD_STDERR, FD_KEREVENT, FD_FB};
+enum {FD_STDIN, FD_STDOUT, FD_STDERR, FD_EVENT, FD_DISINFO, FD_FB};
 
 size_t invalid_read(void *buf, size_t offset, size_t len) {
   panic("should not reach here");
@@ -33,12 +35,16 @@ static Finfo file_table[] __attribute__((used)) = {
   [FD_STDIN]  = {"stdin", 0, 0, invalid_read, invalid_write},
   [FD_STDOUT] = {"stdout", 0, 0, invalid_read, serial_write},
   [FD_STDERR] = {"stderr", 0, 0, invalid_read, serial_write},
-  [FD_KEREVENT]={"/dev/events",0,0,events_read,serial_write},
+  [FD_EVENT]  = {"/dev/events",0,0,events_read,invalid_write},
+  [FD_DISINFO]= {"/proc/dispinfo",0,0,dispinfo_read, invalid_write},
+  [FD_FB]     = {"/dev/fb", 0, 0, invalid_read, fb_write},
 #include "files.h"
 };
 
 void init_fs() {
-  // TODO: initialize the size of /dev/fb
+  // initialize the size of /dev/fb
+  AM_GPU_CONFIG_T dispinfo = io_read(AM_GPU_CONFIG);
+  file_table[FD_FB].size = dispinfo.width * dispinfo.height;
 }
 
 char* getFinfoName(int i){
@@ -79,7 +85,7 @@ size_t fs_read(int fd, void *buf, size_t len){
 
 size_t fs_write(int fd, const void *buf, size_t len){
   if(file_table[fd].write != NULL){
-    return (file_table[fd].write)(buf,0,len);
+    return (file_table[fd].write)(buf,open_offset,len);
   }
   else{
     size_t f_size = file_table[fd].size;
