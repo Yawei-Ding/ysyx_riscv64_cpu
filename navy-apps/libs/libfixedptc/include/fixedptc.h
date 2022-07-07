@@ -103,6 +103,7 @@ typedef	__uint128_t fixedptud;
 #define FIXEDPT_VCSID "$Id$"
 
 #define FIXEDPT_FBITS	(FIXEDPT_BITS - FIXEDPT_WBITS)
+#define FIXEDPT_WMASK	((((fixedpt)1 << FIXEDPT_WBITS) - 1) << FIXEDPT_FBITS)	// add by dingyawei
 #define FIXEDPT_FMASK	(((fixedpt)1 << FIXEDPT_FBITS) - 1)
 
 #define fixedpt_rconst(R) ((fixedpt)((R) * FIXEDPT_ONE + ((R) >= 0 ? 0.5 : -0.5)))
@@ -110,6 +111,7 @@ typedef	__uint128_t fixedptud;
 #define fixedpt_toint(F) ((F) >> FIXEDPT_FBITS)
 #define fixedpt_add(A,B) ((A) + (B))
 #define fixedpt_sub(A,B) ((A) - (B))
+#define fixedpt_intpart(A)	((fixedpt)(A) & FIXEDPT_WMASK)	// add by dingyawei
 #define fixedpt_fracpart(A) ((fixedpt)(A) & FIXEDPT_FMASK)
 
 #define FIXEDPT_ONE	((fixedpt)((fixedpt)1 << FIXEDPT_FBITS))
@@ -125,37 +127,52 @@ typedef	__uint128_t fixedptud;
  * Putting them only in macros will effectively make them optional. */
 #define fixedpt_tofloat(T) ((float) ((T)*((float)(1)/(float)(1L << FIXEDPT_FBITS))))
 
+/* Multiplies two fixedpt numbers, returns the result. */
+static inline fixedpt fixedpt_mul(fixedpt A, fixedpt B) {
+	return (((fixedptd)A * (fixedptd)B) >> FIXEDPT_FBITS);
+}
+
+/* Divides two fixedpt numbers, returns the result. */
+static inline fixedpt fixedpt_div(fixedpt A, fixedpt B) {
+	return (((fixedptd)A << FIXEDPT_FBITS) / (fixedptd)B);
+}
+
 /* Multiplies a fixedpt number with an integer, returns the result. */
 static inline fixedpt fixedpt_muli(fixedpt A, int B) {
-	return 0;
+	return fixedpt_mul(A,fixedpt_fromint(B));
 }
 
 /* Divides a fixedpt number with an integer, returns the result. */
 static inline fixedpt fixedpt_divi(fixedpt A, int B) {
-	return 0;
-}
-
-/* Multiplies two fixedpt numbers, returns the result. */
-static inline fixedpt fixedpt_mul(fixedpt A, fixedpt B) {
-	return 0;
-}
-
-
-/* Divides two fixedpt numbers, returns the result. */
-static inline fixedpt fixedpt_div(fixedpt A, fixedpt B) {
-	return 0;
+	return fixedpt_div(A,fixedpt_fromint(B));
 }
 
 static inline fixedpt fixedpt_abs(fixedpt A) {
-	return 0;
+	return ( A < 0 ? -A: A );
 }
 
+/* These functions return largest integral value not greater than arg A  */
+/* If A is integral, +0, -0, NaN, or infinite, A itself is returned.	 */
+/* For example, floor(0.5) is 0.0, and floor(-0.5) is -1.0.				 */
 static inline fixedpt fixedpt_floor(fixedpt A) {
-	return 0;
+	if (A == 0 || A == 0x7fffffff || A == 0x80000001 || fixedpt_fracpart(A)==0){	// -0, +0 || NaN || -NaN || integer.
+		return A;
+	}
+	else{																			// other real number.
+		return fixedpt_intpart(A);
+	}
 }
 
+/* These functions return the smallest integral value not less than arg A.  */
+/* If A is integral, +0, -0, NaN, or an infinity, A itself is returned.		*/
+/* For example, ceil(0.5) is 1.0, and ceil(-0.5) is 0.0.					*/
 static inline fixedpt fixedpt_ceil(fixedpt A) {
-	return 0;
+	if (A == 0 || A == 0x7fffffff || A == 0x80000001 || fixedpt_fracpart(A)==0){	// -0, +0 || NaN || -NaN || integer.
+		return A;
+	}
+	else{																			// other real number.
+		return fixedpt_intpart(A) + FIXEDPT_ONE;
+	}
 }
 
 /*
