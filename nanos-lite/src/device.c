@@ -29,8 +29,8 @@ size_t events_read(void *buf, size_t offset, size_t len) {
   }
   else{
     switch(key.keydown){
-      case 0:  snprintf((char *)buf,len,"ku %s\n",keyname[key.keycode]); break;
-      case 1:  snprintf((char *)buf,len,"kd %s\n",keyname[key.keycode]); break;
+      case 0:  snprintf((char *)buf,len,"ku %s",keyname[key.keycode]); break;
+      case 1:  snprintf((char *)buf,len,"kd %s",keyname[key.keycode]); break;
     }
     return len;
   }

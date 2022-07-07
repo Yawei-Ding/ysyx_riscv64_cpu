@@ -26,7 +26,7 @@ void init_proc() {
   Log("Initializing processes...");
 
   // load program here
-  naive_uload(NULL,"/bin/fixedptc-test");
+  naive_uload(NULL,"/bin/nslider");
 }
 
 Context* schedule(Context *prev) {

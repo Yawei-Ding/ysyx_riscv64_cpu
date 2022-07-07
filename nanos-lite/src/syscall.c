@@ -61,8 +61,7 @@ void do_syscall(Context *c) {
 }
 
 void sys_exit(Context *c){
-  c->GPRx = 0;
-  halt(c->GPRx);
+  halt(c->GPR2);
 }
 
 void sys_yield(Context *c){
