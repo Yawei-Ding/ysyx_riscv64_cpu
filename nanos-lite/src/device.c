@@ -49,17 +49,27 @@ size_t fb_write(const void *buf, size_t offset, size_t len) {
   AM_GPU_CONFIG_T dispinfo = io_read(AM_GPU_CONFIG);
 
   AM_GPU_FBDRAW_T ctl;
+  ctl.pixels = (void *)buf;
+  ctl.sync = true;
+
+  // there 2 method to support gpu, check fs.c init_fs() and navy-apps/libs/libndl/NDL.c: NDL_DrawRect() to match.
+
+  // method 1: only write w for one time, and use loop to finish all, slow but support native.
+  // ctl.x = (offset/4) % dispinfo.width;
+  // ctl.y = (offset/4) / dispinfo.width;
+  // ctl.w = len/4;
+  // ctl.h = 1;
+
+  // method 2: use high 32bit to store w, low 32bit to store h. fast but not support native!
   ctl.x = offset % dispinfo.width;
   ctl.y = offset / dispinfo.width;
-  ctl.pixels = (void *)buf;
   ctl.w = len >> 32;                // high 32bit.
   ctl.h = len & 0x00000000FFFFFFFF; // low 32bit.
-  ctl.sync = true;
 
   io_write(AM_GPU_FBDRAW, ctl.x, ctl.y, ctl.pixels, ctl.w, ctl.h, ctl.sync);
   open_offset = offset + len;
 
-  printf("GPU trace position (x,y)=(%d,%d), size (w,h)=(%d,%d), sync=%d\n",ctl.x, ctl.y, ctl.w, ctl.h, ctl.sync);
+  printf("GPU trace position (x,y)=(%d,%d), size (w,h)=(%d,%d), sync=%d\n", ctl.x, ctl.y, ctl.w, ctl.h, ctl.sync);
   return 0;
 }
 

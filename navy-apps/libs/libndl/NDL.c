@@ -72,8 +72,20 @@ void NDL_DrawRect(uint32_t *pixels, int x, int y, int w, int h) {
     printf("open /dev/fb error");
     return ;
   }
-  lseek(fd,x*y,SEEK_SET); //move offset to x*y;
+
+// there 2 method to support gpu, check nanos_lite/src/device.c: fb_write() and nanos-lite/src/fs.c:init_fs() to match.
+#if defined(__ISA_NATIVE__) // for native, slow but support native.
+// method 1: only write w for one time, and use loop to finish all.
+  for(int j=0; j<h; j++){
+    lseek(fd,((y+j)*screen_w+x)*4,SEEK_SET); // 4 for 32bits, 4bytes.
+    write(fd, pixels+w*j, 4*w);              // 4 for 32bits, 4bytes.
+  }
+#else // for nemu, fast but not support native.
+// method 2: use high 32bit to store w, low 32bit to store h. 
+  lseek(fd,x*y,SEEK_SET);
   write(fd, pixels, ((size_t)w<<32) | ((size_t)h & 0x00000000FFFFFFFF)); //w=high 32bit, h=low 32bit.
+#endif
+
 }
 
 void NDL_OpenAudio(int freq, int channels, int samples) {

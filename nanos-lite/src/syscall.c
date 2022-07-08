@@ -1,8 +1,6 @@
 #include <common.h>
 #include <fs.h>
 
-//#define strace 1 // close strace by comment this line.
-
 void sys_exit(Context *c);
 void sys_yield(Context *c);
 void sys_open(Context *c);
@@ -18,7 +16,7 @@ char* get_syscall_name(uintptr_t type);
 void do_syscall(Context *c) {
   uintptr_t type = c->GPR1;
 
-#ifdef strace
+#ifdef STRACE
   uintptr_t a[3]={c->GPR2,c->GPR3,c->GPR4};
 #endif 
 
@@ -46,7 +44,7 @@ void do_syscall(Context *c) {
     default: panic("Unhandled syscall ID = %d", type);
   }
 
-#ifdef strace
+#ifdef STRACE
   char* getFinfoName(int i);
   if(type == SYS_open|| type == SYS_read || type == SYS_write || type == SYS_close || type == SYS_lseek){
     if(type == SYS_open) printf("strace detect file %s is doing %s :",a[0], get_syscall_name(type));
@@ -98,7 +96,7 @@ void sys_gettimeofday(Context *c){
   c->GPRx = uptime.us;
 }
 
-#ifdef strace
+#ifdef STRACE
 char* get_syscall_name(uintptr_t type){
   static char SyscallInfo[20];
   switch (type) {
