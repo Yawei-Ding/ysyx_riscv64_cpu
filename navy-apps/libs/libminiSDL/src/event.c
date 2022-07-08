@@ -26,9 +26,9 @@ int SDL_PollEvent(SDL_Event *ev) {
     }
     if(ev->type == SDL_KEYDOWN || ev->type == SDL_KEYUP){
       for(int i=0; i<ARRLEN(keyname); i++)
-      if(strcmp (buf+3, keyname[i]) == 0){
+      if(strncmp (buf+3, keyname[i],strlen(buf)-4) == 0){ // 4 = 3('kd ') + 1('\n')
         ev->key.keysym.sym = i;
-        printf("SDL_PollEvent get: %s\n",buf);
+        printf("SDL_PollEvent get: %s",buf);
         return 1;
       }
     }

@@ -12,7 +12,7 @@ static int screen_w = 0, screen_h = 0;
 uint32_t NDL_GetTicks() {
   struct timeval now;
   gettimeofday(&now, NULL);
-  return now.tv_usec;
+  return now.tv_usec/1000;
 }
 
 int NDL_PollEvent(char *buf, int len) {
