@@ -24,11 +24,12 @@ int SDL_PollEvent(SDL_Event *ev) {
     else if(strncmp (buf, "ku ", 3) == 0){
       ev->key.type = SDL_KEYUP;
     }
+    buf[strlen(buf)-1] = '\0'; // remove '\n'
     if(ev->type == SDL_KEYDOWN || ev->type == SDL_KEYUP){
       for(int i=0; i<ARRLEN(keyname); i++)
-      if(strncmp (buf+3, keyname[i],strlen(buf)-4) == 0){ // 4 = 3('kd ') + 1('\n')
+      if(strcmp (buf+3, keyname[i]) == 0){
         ev->key.keysym.sym = i;
-        printf("SDL_PollEvent get: %s",buf);
+        printf("SDL_PollEvent get: %s\n",buf);
         return 1;
       }
     }
