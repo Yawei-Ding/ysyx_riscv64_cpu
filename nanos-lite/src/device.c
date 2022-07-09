@@ -69,7 +69,7 @@ size_t fb_write(const void *buf, size_t offset, size_t len) {
   io_write(AM_GPU_FBDRAW, ctl.x, ctl.y, ctl.pixels, ctl.w, ctl.h, ctl.sync);
   open_offset = offset + len;
 
-  printf("GPU trace position (x,y)=(%d,%d), size (w,h)=(%d,%d), sync=%d\n", ctl.x, ctl.y, ctl.w, ctl.h, ctl.sync);
+  // Log("gpu frame write at position (x,y)=(%d,%d), size (w,h)=(%d,%d)", ctl.x, ctl.y, ctl.w, ctl.h);
   return 0;
 }
 
