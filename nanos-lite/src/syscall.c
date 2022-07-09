@@ -1,5 +1,6 @@
 #include <common.h>
 #include <fs.h>
+#include <proc.h>
 
 void sys_exit(Context *c);
 void sys_yield(Context *c);
@@ -9,6 +10,7 @@ void sys_write(Context *c);
 void sys_close(Context *c);
 void sys_lseek(Context *c);
 void sys_brk(Context *c);
+void sys_execve(Context *c);
 void sys_gettimeofday(Context *c);
 char* get_syscall_name(uintptr_t type);
 
@@ -34,7 +36,7 @@ void do_syscall(Context *c) {
     case SYS_fstat        :                       break;
     case SYS_time         :                       break;
     case SYS_signal       :                       break;
-    case SYS_execve       :                       break;
+    case SYS_execve       : sys_execve(c);        break;
     case SYS_fork         :                       break;
     case SYS_link         :                       break;
     case SYS_unlink       :                       break;
@@ -59,7 +61,8 @@ void do_syscall(Context *c) {
 }
 
 void sys_exit(Context *c){
-  halt(c->GPR2);
+  //halt(c->GPR2);
+  naive_uload(NULL,"/bin/nterm");
 }
 
 void sys_yield(Context *c){
@@ -89,6 +92,10 @@ void sys_lseek(Context *c){
 
 void sys_brk(Context *c){
   c->GPRx = 0;
+}
+
+void sys_execve(Context *c){
+  naive_uload(NULL,(const char *)c->GPR2);
 }
 
 void sys_gettimeofday(Context *c){
