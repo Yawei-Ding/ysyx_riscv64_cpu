@@ -2,7 +2,7 @@
 
 网站链接： [一生一芯计划](https://ysyx.oscc.cc/docs/)
 
-## 开发进度：
+## 1. 开发进度：
 
 1.branch - SingleCycleCPU: RISCV64IM单周期处理器核，已完成设计:
 ![img](README.assets/SingleCycleCPU.png)
@@ -12,7 +12,7 @@
 
 3.总线、外设 正在开发中。
 
-## 代码结构
+## 2. 代码结构
 
 ```c
 ├── abstract-machine      // high level software.
@@ -56,9 +56,9 @@
           └── stl_rst.sv
 ```
 
-## 流水线处理
+## 3. 流水线处理
 
-### 数据冒险旁路
+### 3.1 数据冒险旁路
 
 1. 方式1：
 
@@ -70,11 +70,7 @@
 
 Q&A：
 
-1. 我这里采用的是方式1，主要基于三点考虑：
-
-   1. ALU这一级的组合逻辑有乘法，如果再加旁路逻辑，那么cirtical path的时延就太高了。
-   2. 如果使用方式2，那么还需要在ex阶段重新访问一次regfile读reg，属实是挺烦的。
-   3. 我的BRU在ID阶段进行，如果采用方式1，那ID阶段的reg就是错的了，bru的计算也是错的了。
+1. 我这里采用的是方式1，主要因为：WriteBack级后面的"pipeline reg"实际上是物理寄存器堆，那么使用方式2，那么还需要再访问一次regfile读reg~那样的话还需要再增加一个读端口。。属实没必要了。
 
 2. 为什么不采用和计组书上写的一样的前半个收起写reg，后半个周期读reg呢？
 
@@ -86,17 +82,22 @@ Q&A：
    2. 绿色为ld指令+alu指令，这种情况即使通过bypass无法解决，需要通过**冒泡**方式来进行处理。
    3. 蓝色为ld+st指令，虽然ld指令的结果在mem后面才可以拿到，但是st保存的reg值也是在mem开始前才需要！这种处理方式是，通过id阶段的bypass逻辑，识别出来以后，通过流水级传递到ex阶段，然后在ex阶段根据这个bypass信号，来决定给mem的输出是什么。
 
-### 控制冒险
+### 3.2 数据冒险冒泡
 
+> 有一种必须要冒泡的数据冒险：ld后紧跟alu，且alu的源是ld的目的，则必须要冒泡。
+
+主体思路：对ID/EX的reg插入一个nop，同时让PC和IF/ID的寄存器保持一个周期不变。
+
+具体手段：1. 给ID/EX一个nop信号，强制修改写入reg的内容；2. 给IF/ID一个stall信号停顿IF/ID，并通过反压握手让PC保持不变;
+
+![uTools_1654931277424](README.assets/data_risk.png)
+
+
+### 3.3 控制冒险
 使用预测未命中的方案。
 
+主体思路：只对IF/ID的reg插入一个nop，对其他的地方不做任何处理。
+
+具体手段：给IF/ID一个nop信号，强制修改写入reg的内容;
+
 ![image-20220611112106961](README.assets/branch_risk.png)
-
-### 处理方法
-
-1. 分支冒险：只对IF/ID的reg插入一个nop，对其他的地方不做任何处理。
-   ![image-20220611150706137](README.assets/branch_nop.png)
-
-2. ld+alu的数据冒险：对ID/EX的reg插入一个nop，同时关闭PC和IF/ID的寄存器，防止他们变化。
-   ![uTools_1654931277424](README.assets/data_nop.png)
-

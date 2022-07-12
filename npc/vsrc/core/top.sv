@@ -14,7 +14,14 @@ module top(
   // 2.cpu:  ////////////////////////////////////////////////////////
   // control signals:
   logic [`CPU_WIDTH-1:0]  pc;
-  logic pc_wen, ifid_wen, ifid_bubble, idex_bubble, idu_ldstbp, exu_ldstbp;
+  logic                   ifid_nop;               // for branch adventure
+  logic                   ifid_stall, idex_nop;   // for data adventure
+  logic                   idu_ldstbp, exu_ldstbp; // for ld -> st bypass.
+  logic                   ifu_valid,ifu_ready;    // pipeline shakehands: pc/if -> if/id
+  logic                   idu_valid,idu_ready;    // pipeline shakehands: if/id -> id/ex
+  logic                   exu_valid,exu_ready;    // pipeline shakehands: id/ex -> ex/ls
+  logic                   lsu_valid,lsu_ready;    // pipeline shakehands: ex/ls -> ls/wb
+  logic                   wbu_valid,wbu_ready;    // pipeline shakehands: ls/wb -> wb/regfile.
 
   // simulation signals:
   logic [2:0]             s_id_err;
@@ -36,8 +43,12 @@ module top(
   pipe_if_id u_pipe_if_id(
     .i_clk        (i_clk        ),
     .i_rst_n      (rst_n_sync   ),
-    .i_wen        (ifid_wen     ),
-    .i_bubble     (ifid_bubble  ),
+    .i_nop        (ifid_nop     ),
+    .i_stall      (ifid_stall   ),
+    .i_pre_valid  (ifu_valid    ),
+    .o_pre_ready  (ifu_ready    ),
+    .o_post_valid (idu_valid    ),
+    .i_post_ready (idu_ready    ),
     .i_ifu_ins    (ifu_ins      ),
     .i_ifu_pc     (ifu_pc       ),
     .o_idu_ins    (ifu_ins_r    ),
@@ -87,7 +98,11 @@ module top(
   pipe_id_ex u_pipe_id_ex(
     .i_clk         (i_clk         ),
     .i_rst_n       (rst_n_sync    ),
-    .i_bubble      (idex_bubble   ),
+    .i_nop         (idex_nop      ),
+    .i_pre_valid   (idu_valid     ),
+    .o_pre_ready   (idu_ready     ),
+    .o_post_valid  (exu_valid     ),
+    .i_post_ready  (exu_ready     ),
     .i_idu_imm     (idu_imm       ),
     .i_idu_rs1     (idu_rs1       ),
     .i_idu_rs2     (idu_rs2       ),
@@ -145,6 +160,10 @@ module top(
   pipe_ex_ls u_pipe_ex_ls(
     .i_clk        (i_clk        ),
     .i_rst_n      (rst_n_sync   ),
+    .i_pre_valid  (exu_valid    ),
+    .o_pre_ready  (exu_ready    ),
+    .o_post_valid (lsu_valid    ),
+    .i_post_ready (lsu_ready    ),
     .i_exu_exres  (exu_exres    ),
     .i_exu_rs2    (exu_rs2_bp   ),
     .i_exu_rdid   (exu_rdid     ),
@@ -186,8 +205,12 @@ module top(
   assign lsu_rdwen = exu_rdwen_r;
 
   pipe_ls_wb u_pipe_ls_wb(
-  	.i_clk        (i_clk        ),
+    .i_clk        (i_clk        ),
     .i_rst_n      (rst_n_sync   ),
+    .i_pre_valid  (lsu_valid    ),
+    .o_pre_ready  (lsu_ready    ),
+    .o_post_valid (wbu_valid    ),
+    .i_post_ready (wbu_ready    ),
     .i_lsu_exres  (lsu_exres    ),
     .i_lsu_lsres  (lsu_lsres    ),
     .i_lsu_rdid   (lsu_rdid     ),
@@ -199,7 +222,7 @@ module top(
     .o_wbu_rdid   (lsu_rdid_r   ),
     .o_wbu_rdwen  (lsu_rdwen_r  ),
     .o_wbu_lden   (lsu_lden_r   ),
-    .s_wbu_diffpc (s_wbu_diffpc  )
+    .s_wbu_diffpc (s_wbu_diffpc )
   );
 
   // 2.5 wbu ///////////////////////////////////////////////
@@ -208,52 +231,57 @@ module top(
   logic                       wbu_rdwen;
 
   assign wbu_rdid  = lsu_rdid_r ;
-  assign wbu_rdwen = lsu_rdwen_r;
+
   wbu u_wbu(
-    .i_exu_res (lsu_exres_r ),
-    .i_lsu_res (lsu_lsres_r ),
-    .i_ldflag  (lsu_lden_r  ),
-    .o_rd      (wbu_rd      )
+    .i_pre_valid (wbu_valid   ),
+    .o_pre_ready (wbu_ready   ),
+    .i_rdwen     (lsu_rdwen_r ),
+    .i_exu_res   (lsu_exres_r ),
+    .i_lsu_res   (lsu_lsres_r ),
+    .i_ldflag    (lsu_lden_r  ),
+    .o_rdwen     (wbu_rdwen   ),
+    .o_rd        (wbu_rd      )
   );
 
   // 2.6 bypass, regfile read/write. ///////////////////////
   bypass u_bypass(
-    .i_clk         (i_clk         ),
+  	.i_clk        (i_clk        ),
     // generate rs1,rs2:
-    .i_idu_rs1id   (idu_rs1id     ),
-    .i_idu_rs2id   (idu_rs2id     ),
-    .i_idu_sten    (idu_sten      ),
-    .i_exu_lden    (exu_lden      ),
-    .i_exu_rdwen   (exu_rdwen     ),
-    .i_exu_rdid    (exu_rdid      ),
-    .i_exu_exres   (exu_exres     ),
-    .i_lsu_lden    (lsu_lden      ),
-    .i_lsu_rdwen   (lsu_rdwen     ),
-    .i_lsu_rdid    (lsu_rdid      ),
-    .i_lsu_lsres   (lsu_lsres     ),
-    .i_lsu_exres   (lsu_exres     ),   
-    .i_wbu_rdwen   (wbu_rdwen     ),
-    .i_wbu_rdid    (wbu_rdid      ),
-    .i_wbu_rd      (wbu_rd        ),
-    .o_idu_rs1     (idu_rs1       ),
-    .o_idu_rs2     (idu_rs2       ),
-    .o_pc_wen      (pc_wen        ),
-    .o_ifid_wen    (ifid_wen      ),
-    .o_idex_bubble (idex_bubble   ),
+    .i_idu_rs1id  (idu_rs1id     ),
+    .i_idu_rs2id  (idu_rs2id     ),
+    .i_idu_sten   (idu_sten      ),
+    .i_exu_lden   (exu_lden      ),
+    .i_exu_rdwen  (exu_rdwen     ),
+    .i_exu_rdid   (exu_rdid      ),
+    .i_exu_exres  (exu_exres     ),
+    .i_lsu_lden   (lsu_lden      ),
+    .i_lsu_rdwen  (lsu_rdwen     ),
+    .i_lsu_rdid   (lsu_rdid      ),
+    .i_lsu_exres  (lsu_exres     ),
+    .i_lsu_lsres  (lsu_lsres     ),
+    .i_wbu_rdwen  (wbu_rdwen     ),
+    .i_wbu_rdid   (wbu_rdid      ),
+    .i_wbu_rd     (wbu_rd        ),
+    .o_idu_rs1    (idu_rs1       ),
+    .o_idu_rs2    (idu_rs2       ),
+    .o_idex_nop   (idex_nop      ),
+    .o_ifid_stall (ifid_stall    ),
     // generate regst:
-    .i_exu_rs2     (exu_rs2       ),
-    .o_idu_ldstbp  (idu_ldstbp    ),
-    .i_exu_ldstbp  (exu_ldstbp    ),
-    .o_exu_rs2     (exu_rs2_bp    ),
-    .s_a0zero      (s_a0zero      )
+    .i_exu_rs2    (exu_rs2      ),
+    .o_idu_ldstbp (idu_ldstbp   ),
+    .i_exu_ldstbp (exu_ldstbp   ),
+    .o_exu_rs2    (exu_rs2_bp   ),
+    .s_a0zero     (s_a0zero     )
   );
+  
 
   // 2.7 bru ///////////////////////////////////////////////
 
   bru u_bru(
     .i_clk        (i_clk       ),
     .i_rst_n      (rst_n_sync  ),
-    .i_pcwen      (pc_wen      ),
+    .o_post_valid (ifu_valid   ),
+    .i_post_ready (ifu_ready   ),
     .i_jal        (idu_jal     ),
     .i_jalr       (idu_jalr    ),
     .i_brch       (idu_brch    ),
@@ -263,7 +291,7 @@ module top(
     .i_imm        (idu_imm     ),
     .i_prepc      (idu_pc      ),
     .o_pc         (pc          ),
-    .o_ifid_bubble(ifid_bubble )
+    .o_ifid_nop   (ifid_nop    )
   );
 
 

@@ -26,9 +26,8 @@ module bypass (
   output logic  [`CPU_WIDTH-1:0]   o_idu_rs1     ,
   output logic  [`CPU_WIDTH-1:0]   o_idu_rs2     ,
   // to pc if/id id/ex:
-  output                           o_pc_wen      ,
-  output                           o_ifid_wen    ,
-  output                           o_idex_bubble ,
+  output                           o_idex_nop    ,
+  output                           o_ifid_stall  ,
 
   // 2. from id/ex pipe reg & lsu out to generate regst for ex/ls pipe reg in:
   input         [`CPU_WIDTH-1:0]   i_exu_rs2     ,  // from id/ex pipe reg out.
@@ -81,9 +80,8 @@ module bypass (
     end
   end
 
-  assign o_idex_bubble =  i_exu_lden && i_exu_rdwen && ( i_exu_rdid == i_idu_rs1id || i_exu_rdid == i_idu_rs2id ) && !o_idu_ldstbp;
-  assign o_pc_wen      = ~ o_idex_bubble;
-  assign o_ifid_wen    = ~ o_idex_bubble;
+  assign o_idex_nop =  i_exu_lden && i_exu_rdwen && ( i_exu_rdid == i_idu_rs1id || i_exu_rdid == i_idu_rs2id ) && !o_idu_ldstbp;
+  assign o_ifid_stall = o_idex_nop;
 
   // 2. from id/ex pipe reg & lsu out to generate regst for ex/ls pipe reg in:////////////////////////////////////
   assign o_idu_ldstbp  =  i_exu_lden && i_exu_rdwen && (i_exu_rdid == i_idu_rs2id) && i_idu_sten;  //load + store, do not need bubble!
