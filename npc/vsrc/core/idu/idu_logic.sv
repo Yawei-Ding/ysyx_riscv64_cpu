@@ -1,5 +1,5 @@
 `include "config.sv"
-module idu(
+module idu_logic(
   input        [`INS_WIDTH-1:0]     i_ins         ,
   output logic [`REG_ADDRW-1:0]     o_rs1id       , //for reg.
   output logic [`REG_ADDRW-1:0]     o_rs2id       , //for reg.

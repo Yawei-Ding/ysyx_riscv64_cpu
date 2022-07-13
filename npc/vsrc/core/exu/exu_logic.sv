@@ -1,24 +1,24 @@
 `include "config.sv"
-module exu (
+module exu_logic (
   input         [`CPU_WIDTH-1:0]      i_pc      ,
   input         [`CPU_WIDTH-1:0]      i_rs1     ,
   input         [`CPU_WIDTH-1:0]      i_rs2     ,
   input         [`CPU_WIDTH-1:0]      i_imm     ,
-  input         [`EXU_SEL_WIDTH-1:0]  i_src_sel ,
+  input         [`EXU_SEL_WIDTH-1:0]  i_exsrc   ,
   input         [`EXU_OPT_WIDTH-1:0]  i_exopt   ,
   output logic  [`CPU_WIDTH-1:0]      o_exu_res
 );
 
   logic [`CPU_WIDTH-1:0] src1,src2;
 
-  stl_mux_default #(1<<`EXU_SEL_WIDTH, `EXU_SEL_WIDTH, `CPU_WIDTH) mux_src1 (src1, i_src_sel, `CPU_WIDTH'b0, {
+  stl_mux_default #(1<<`EXU_SEL_WIDTH, `EXU_SEL_WIDTH, `CPU_WIDTH) mux_src1 (src1, i_exsrc, `CPU_WIDTH'b0, {
     `EXU_SEL_REG, i_rs1,
     `EXU_SEL_IMM, i_rs1,
     `EXU_SEL_PC4, i_pc,
     `EXU_SEL_PCI, i_pc
   });
 
-  stl_mux_default #(1<<`EXU_SEL_WIDTH, `EXU_SEL_WIDTH, `CPU_WIDTH) mux_src2 (src2, i_src_sel, `CPU_WIDTH'b0, {
+  stl_mux_default #(1<<`EXU_SEL_WIDTH, `EXU_SEL_WIDTH, `CPU_WIDTH) mux_src2 (src2, i_exsrc, `CPU_WIDTH'b0, {
     `EXU_SEL_REG, i_rs2,
     `EXU_SEL_IMM, i_imm,
     `EXU_SEL_PC4, `CPU_WIDTH'h4,
@@ -43,7 +43,7 @@ module exu (
       `EXU_SRA:   o_exu_res = {{{64{src1[63]}},src1} >> src2[5:0]}[63:0];
       `EXU_SLLW:  begin o_exu_res[31:0] = src1[31:0] << src2[4:0];               o_exu_res = {{32{o_exu_res[31]}},o_exu_res[31:0]}; end
       `EXU_SRLW:  begin o_exu_res[31:0] = src1[31:0] >> src2[4:0];               o_exu_res = {{32{o_exu_res[31]}},o_exu_res[31:0]}; end
-      `EXU_SRAW:  begin o_exu_res = {{32{src1[31]}}, src1[31:0]} >> src2[4:0]; o_exu_res = {{32{o_exu_res[31]}},o_exu_res[31:0]}; end
+      `EXU_SRAW:  begin o_exu_res = {{32{src1[31]}}, src1[31:0]} >> src2[4:0];   o_exu_res = {{32{o_exu_res[31]}},o_exu_res[31:0]}; end
       `EXU_MUL:   o_exu_res = src1 * src2;
       `EXU_MULH:  o_exu_res = src1 * src2 >> 64;
       `EXU_MULHSU:o_exu_res = {{1'b0, src1} * src2 >> 64}[63:0];

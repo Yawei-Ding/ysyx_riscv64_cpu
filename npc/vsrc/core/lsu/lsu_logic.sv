@@ -1,4 +1,4 @@
-module lsu (
+module lsu_logic (
   input                               i_clk   ,
   input         [2:0]                 i_lsfunc3,
   input                               i_lden  ,

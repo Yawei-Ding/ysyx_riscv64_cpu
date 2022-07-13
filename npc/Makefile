@@ -2,7 +2,7 @@
 CSRC +=  $(shell find $(abspath ./csrc) -name "*.cpp")
 VSRC +=  $(shell find $(abspath ./vsrc) -name "*.v" -or -name "*.sv")
 TOP_MODULE := top
-SEARCHPATH := ./vsrc/core
+SEARCHPATH := ./vsrc/core/other
 
 # 2.verilator flags:
 VERILATOR_FLAGS += -Wall --trace --cc --exe --build
