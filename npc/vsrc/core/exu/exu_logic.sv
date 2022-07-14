@@ -29,7 +29,14 @@ module exu_logic (
   // 所以 src1 - src2 得到是补码！ 如果src1和src2是有符号数，通过输出最高位就可以判断正负！
   // 如果src1和src2是无符号数，那么就在最高位补0，拓展为有符号数再减法，通过最高位判断正负！
 
+  logic [65 :0] mulsrc1,mulsrc2;
+  logic [131:0] mulres;
+
+  mult66 u_mult66( .x(mulsrc1), .y(mulsrc2), .res (mulres));
+
   always @(*) begin
+    mulsrc1 = 66'b0;
+    mulsrc2 = 66'b0;
     case (i_exopt)
       `EXU_ADD:   o_exu_res = src1 + src2;
       `EXU_SUB:   o_exu_res = src1 - src2;
@@ -44,15 +51,15 @@ module exu_logic (
       `EXU_SLLW:  begin o_exu_res[31:0] = src1[31:0] << src2[4:0];               o_exu_res = {{32{o_exu_res[31]}},o_exu_res[31:0]}; end
       `EXU_SRLW:  begin o_exu_res[31:0] = src1[31:0] >> src2[4:0];               o_exu_res = {{32{o_exu_res[31]}},o_exu_res[31:0]}; end
       `EXU_SRAW:  begin o_exu_res = {{32{src1[31]}}, src1[31:0]} >> src2[4:0];   o_exu_res = {{32{o_exu_res[31]}},o_exu_res[31:0]}; end
-      `EXU_MUL:   o_exu_res = src1 * src2;
-      `EXU_MULH:  o_exu_res = src1 * src2 >> 64;
-      `EXU_MULHSU:o_exu_res = {{1'b0, src1} * src2 >> 64}[63:0];
-      `EXU_MULHU: o_exu_res = {{1'b0, src1} * {1'b0, src2} >> 64}[63:0]; 
+      `EXU_MUL:   begin mulsrc1 = {{2{src1[`CPU_WIDTH-1]}},src1}; mulsrc2 = {{2{src2[`CPU_WIDTH-1]}},src2}; o_exu_res = mulres[`CPU_WIDTH-1:0];            end
+      `EXU_MULH:  begin mulsrc1 = {{2{src1[`CPU_WIDTH-1]}},src1}; mulsrc2 = {{2{src2[`CPU_WIDTH-1]}},src2}; o_exu_res = mulres[2*`CPU_WIDTH-1:`CPU_WIDTH]; end
+      `EXU_MULHSU:begin mulsrc1 = {{2{src1[`CPU_WIDTH-1]}},src1}; mulsrc2 = {2'b0,src2};                    o_exu_res = mulres[2*`CPU_WIDTH-1:`CPU_WIDTH]; end
+      `EXU_MULHU: begin mulsrc1 = {2'b0,src1};                    mulsrc2 = {2'b0,src2};                    o_exu_res = mulres[2*`CPU_WIDTH-1:`CPU_WIDTH]; end
       `EXU_DIV:   o_exu_res = src1 / src2;
       `EXU_DIVU:  o_exu_res = {{1'b0, src1} / {1'b0, src2}}[63:0];
       `EXU_REM:   o_exu_res = src1 % src2;
       `EXU_REMU:  o_exu_res = {{1'b0, src1} % {1'b0, src2}}[63:0];
-      `EXU_MULW:  begin o_exu_res[31:0] = {src1[31:0] * src2[31:0]}[31:0];             o_exu_res = {{32{o_exu_res[31]}}, o_exu_res[31:0]}; end
+      `EXU_MULW:  begin mulsrc1 = {{34{src1[31]}},src1[31:0]};  mulsrc2 = {{34{src2[31]}},src2[31:0]}; o_exu_res = {{32{mulres[31]}}, mulres[31:0]};  end
       `EXU_DIVW:  begin o_exu_res[31:0] = {src1[31:0] / src2[31:0]};                   o_exu_res = {{32{o_exu_res[31]}}, o_exu_res[31:0]}; end
       `EXU_DIVUW: begin o_exu_res[31:0] = {{1'b0,src1[31:0]}/{1'b0,src2[31:0]}}[31:0]; o_exu_res = {{32{o_exu_res[31]}}, o_exu_res[31:0]}; end
       `EXU_REMW:  begin o_exu_res[31:0] = {src1[31:0] % src2[31:0]};                   o_exu_res = {{32{o_exu_res[31]}}, o_exu_res[31:0]}; end
