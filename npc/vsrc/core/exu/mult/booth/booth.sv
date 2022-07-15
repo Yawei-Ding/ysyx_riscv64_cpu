@@ -1,7 +1,7 @@
-module booth #(parameter WDITH=32) (
-  input [WDITH-1:0] x,
+module booth #(parameter WIDTH=32) (
+  input [WIDTH-1:0] x,
   input [2:0] s,
-  output wire [WDITH:0] p,
+  output wire [WIDTH:0] p,
   output wire c
 );
 
@@ -18,7 +18,7 @@ module booth #(parameter WDITH=32) (
   assign p = sel_double_negative ? ~{x, 1'b0} : 
             (sel_double_positive ? {x, 1'b0} :
             (sel_negative ? ~{1'b0,x}:
-            (sel_positive ?  {1'b0,x} : {(WDITH+1){1'b0}})));
+            (sel_positive ?  {1'b0,x} : {(WIDTH+1){1'b0}})));
   assign c = sel_double_negative | sel_negative ? 1'b1 : 1'b0;
 
 endmodule
