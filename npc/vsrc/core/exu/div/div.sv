@@ -1,0 +1,92 @@
+module div#(
+  parameter WIDTH = 64
+)(
+  input                     i_clk         ,
+  input                     i_rst_n       ,
+  input                     i_divw        ,
+  input                     i_start       ,
+  output logic              o_end_valid   ,
+  input                     i_end_ready   ,
+  input                     i_signed      ,
+  input  logic [WIDTH-1:0]  i_dividend    ,
+  input  logic [WIDTH-1:0]  i_divisor     ,
+  output logic [WIDTH-1:0]  o_quotient    ,
+  output logic [WIDTH-1:0]  o_remainder
+);
+
+  // 1. control signal:///////////////////////////////////////////////////////////////////////
+  parameter CNT_W = $clog2(WIDTH);
+  
+  logic [CNT_W-1:0] cnt;
+
+  logic start_valid, start_ready, div_start;
+  assign start_valid = i_start;
+  assign start_ready = (!(|cnt)) & (!o_end_valid);
+  assign div_start = start_valid & start_ready;
+
+  always@(posedge i_clk or negedge i_rst_n)begin
+    if(!i_rst_n)begin
+      cnt <= {CNT_W{1'b0}};
+    end else if(div_start) begin
+      cnt <= i_divw ? {1'b0,{(CNT_W-1){1'b1}}} : {CNT_W{1'b1}}; // 31, 63.
+    end else if(|cnt) begin // cnt != 0
+      cnt <= cnt - 1;
+    end
+  end
+
+  always@(posedge i_clk or negedge i_rst_n)begin
+    if(!i_rst_n)begin
+      o_end_valid <= 1'b0;
+    end else if(cnt == {{(CNT_W-1){1'b0}},1'b1}) begin
+      o_end_valid <= 1'b1;
+    end else if(i_end_ready) begin
+      o_end_valid <= 1'b0;
+    end
+  end
+
+  // 2. deal input signals://///////////////////////////////////////////////////////////////////
+  wire [WIDTH-1:0] i_dividend_wrapper = i_divw ? {{(WIDTH/2){i_dividend[WIDTH/2-1]}}, i_dividend[WIDTH/2-1:0]} : i_dividend;
+  wire [WIDTH-1:0] i_divisor_wrapper  = i_divw ? {{(WIDTH/2){i_divisor [WIDTH/2-1]}}, i_divisor [WIDTH/2-1:0]} : i_divisor ;
+
+  wire dividend_positive = i_signed ? ~i_dividend_wrapper[WIDTH-1] : 1;
+  wire divisor_positive  = i_signed ? ~i_divisor_wrapper [WIDTH-1] : 1;
+
+  wire [WIDTH-1:0] i_dividend_abs = dividend_positive ? i_dividend_wrapper : ~i_dividend_wrapper + 1'b1;
+  wire [WIDTH-1:0] i_divisor_abs  = divisor_positive  ? i_divisor_wrapper  : ~i_divisor_wrapper  + 1'b1;
+
+  // 3. div:///////////////////////////////////////////////////////////////////////////////////
+  logic [WIDTH-1  :0] divisor_r;
+  logic [2*WIDTH-1:0] dividend , dividend_r ;
+  logic [WIDTH-1  :0] quotient , quotient_r ;
+
+  always@(posedge i_clk or negedge i_rst_n)begin
+    if(!i_rst_n)begin
+      dividend_r  <= {2*WIDTH{1'b0}};
+      divisor_r   <= {  WIDTH{1'b0}};
+      quotient_r  <= {  WIDTH{1'b0}};
+    end else if(div_start) begin
+      dividend_r  <= {{WIDTH{1'b0}}, i_dividend_abs};
+      divisor_r   <= i_divisor_abs;
+      quotient_r  <= {WIDTH{1'b0}};
+    end else if(|cnt) begin
+      dividend_r  <= dividend ;
+      quotient_r  <= quotient ;
+    end
+  end
+
+  logic [WIDTH:0] div_sub;
+  logic sub_positive;
+
+  assign div_sub = {dividend_r >> cnt}[WIDTH:0] - {1'b0,divisor_r};
+  assign sub_positive = ~div_sub[WIDTH];
+  assign dividend = sub_positive ? (({{(WIDTH-1){1'b0}},div_sub} << cnt) | ((dividend_r << (2*WIDTH-cnt)) >> (2*WIDTH-cnt))): dividend_r;
+
+  for(genvar i=0; i<WIDTH; i++)begin
+    assign quotient[i]  = (i == cnt) ? sub_positive : quotient_r[i];
+  end
+
+  // 4. output:
+  assign o_quotient  = o_end_valid ? (~(dividend_positive^divisor_positive) ? quotient : ~quotient + 1'b1)  : {WIDTH{1'b0}};
+  assign o_remainder = o_end_valid ? (dividend_positive ? dividend[WIDTH-1:0] : ~dividend[WIDTH-1:0] + 1'b1): {WIDTH{1'b0}};
+
+endmodule

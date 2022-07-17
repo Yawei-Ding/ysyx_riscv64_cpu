@@ -36,7 +36,7 @@ gdb:com ${DIFFTEST}
 	@gdb --silent -s ${BIN} --args ${NPC_EXEC}
 
 wave:
-	gtkwave ${OBJ_DIR}/sim.vcd
+	@gtkwave ${OBJ_DIR}/sim.vcd
 
 clean:
 	rm -rf ${OBJ_DIR}

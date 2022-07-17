@@ -27,6 +27,9 @@ int main(int argc, char *argv[]) {
   top->i_clk = 0;
   step_and_dump_wave(contextp,tfp,top);       //init reg status,use for difftest_init.
   npc_init(argc,argv);
+#ifdef DIFFTEST_ON
+  uint64_t lastpc;
+#endif
 
   ///////////////////////////////// verilator doing: ///////////////////////////////
   while (!contextp->gotFinish())
@@ -35,14 +38,15 @@ int main(int argc, char *argv[]) {
 #ifdef DIFFTEST_ON
     top->eval();                              // update rst_n_sync
     if(top->i_clk && rst_n_sync){
-      //printf("pc = 0x%lx\n", dut_pc);
-      if(dut_pc != 0 && dut_pc != 1){         // 0 means branch bubble, 1 means data bubble.
+      // 0 means branch bubble, 1 means data bubble, dut_pc != lastpc means more than one cycle:
+      if(dut_pc != 0 && dut_pc != 1 && dut_pc != lastpc){ 
         if(!difftest_check()){                // check last cycle reg/mem.
           print_regs();
-          break; 
+          break;
         }
-        difftest_step();                      // ref step and update regs/mem.
+        difftest_step();                      // nemu step and update regs/mem.
       }
+      lastpc = dut_pc;
     }
 #endif
     step_and_dump_wave(contextp,tfp,top);

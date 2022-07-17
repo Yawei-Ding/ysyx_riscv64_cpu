@@ -1,6 +1,7 @@
 module mult #(
   parameter W = 64          // width should not be changed, only support 64 now.
 )(
+  input             i_mulw  ,
   input             i_x_sign,
   input             i_y_sign,
   input 	[W-1:0]   i_x     ,
@@ -11,13 +12,13 @@ module mult #(
 
   localparam TOTAL_W = W + 2 ; // 2 for signed extension, 66 totally.
   localparam PNUM = TOTAL_W/2;
-  
+
   logic	[TOTAL_W-1:0]   x  ;
   logic	[TOTAL_W-1:0]   y  ;
   logic [2*TOTAL_W-1:0] res;
 
-  assign x = {i_x_sign ? {2{i_x[W-1]}} : 2'b0, i_x[W-1:0]};
-  assign y = {i_y_sign ? {2{i_y[W-1]}} : 2'b0, i_y[W-1:0]};
+  assign x = i_mulw ? {{(2+W/2){i_x[W/2-1]}}, i_x[W/2-1:0]} : {i_x_sign ? {2{i_x[W-1]}} : 2'b0, i_x[W-1:0]};
+  assign y = i_mulw ? {{(2+W/2){i_y[W/2-1]}}, i_y[W/2-1:0]} : {i_y_sign ? {2{i_y[W-1]}} : 2'b0, i_y[W-1:0]};
 
   // 1. generate partial product://///////////////////////////////////////////////////////////
   wire  [TOTAL_W:0] p[PNUM-1:0];

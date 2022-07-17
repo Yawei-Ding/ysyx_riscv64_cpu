@@ -12,7 +12,7 @@ module idu (
   // 2. input comb signal from pre stage:
   input        [`INS_WIDTH-1:0]     i_ifu_ins     ,
   input        [`CPU_WIDTH-1:0]     i_ifu_pc      ,
-  
+
   // 3. output comb signal to post stage:
   // 3.1 for bypass to get reg value.
   output logic [`REG_ADDRW-1:0]     o_idu_rs1id   ,
