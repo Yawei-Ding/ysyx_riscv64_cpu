@@ -55,7 +55,7 @@ module exu (
 
   logic alu_int, alu_mul, alu_div;
   logic one_cycle_valid;
-  logic div_start, div_end_valid, div_end_ready;
+  logic div_end_valid, div_end_ready;
 
   wire prewen;
   assign o_pre_ready =  alu_div ? (div_end_valid & div_end_ready): (o_post_valid & i_post_ready | !o_post_valid) ;
@@ -72,7 +72,6 @@ module exu (
     .o_dout     (one_cycle_valid)
   );
 
-  assign div_start = alu_div ? one_cycle_valid : 1'b0;
   assign div_end_ready = alu_div ? i_post_ready : 1'b0;
   assign o_post_valid = alu_div ? div_end_valid : one_cycle_valid;
 
@@ -210,11 +209,15 @@ module exu (
   logic divw,div_signed;
   logic [`CPU_WIDTH-1:0] dividend, divisor, quotient, remainder;
   
+  logic div_busy;
+  wire div_start = (alu_div & one_cycle_valid) & !div_busy;
+
   div #(.WIDTH (`CPU_WIDTH )) u_div(
     .i_clk          (i_clk         ),
     .i_rst_n        (i_rst_n       ),
     .i_divw         (divw          ),
     .i_start        (div_start     ),
+    .o_busy         (div_busy      ),
     .o_end_valid    (div_end_valid ),
     .i_end_ready    (div_end_ready ),
     .i_signed       (div_signed    ),

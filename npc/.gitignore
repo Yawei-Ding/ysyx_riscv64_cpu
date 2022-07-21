@@ -8,6 +8,7 @@
 !*.sv
 !*.cc
 !*.cpp
+!*.hpp
 !.gitignore
 !README.md
 !/vsrc/*

@@ -1,7 +1,7 @@
 #include "include/include.h"
 #include <getopt.h>
 
-static char *img_file = NULL;
+char *img_file = NULL;
 static char *diff_so_file = NULL;
 
 static int parse_args(int argc, char *argv[]) {
@@ -49,14 +49,16 @@ static long load_img(char *img_file) {
   return size;
 }
 
-void npc_init(int argc, char *argv[]) {
+void npc_init(int argc, char *argv[],axi4_mem <64,64,4> *mem) {
   /* Perform some global initialization. */
 
   /* Parse arguments. */
   parse_args(argc, argv);
 
   /* Load the image to memory. This will overwrite the built-in image. */
-  long img_size = load_img(img_file);
+  long img_size = load_img(img_file);     // for DPI-C
+  
+  mem->load_binary(img_file,0x80000000);  // for AXI
 
 #ifdef  DIFFTEST_ON
   /* Initialize differential testing. */

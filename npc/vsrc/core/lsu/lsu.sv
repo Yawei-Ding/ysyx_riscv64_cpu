@@ -1,13 +1,17 @@
 module lsu (
-  // 1. signal to pipe shake hands:
   input                         i_clk         ,
   input                         i_rst_n       ,
+  
+  // 1. axi interface to get data from mem:
+  uni_if.Master                 UniIf_M       ,
+
+  // 2. signal to pipe shake hands:
   input                         i_pre_valid   ,   // from pre-stage
   output                        o_pre_ready   ,   //  to  pre-stage
   output                        o_post_valid  ,   //  to  post-stage
   input                         i_post_ready  ,   // from post-stage
 
-  // 2. input comb signal from pre stage:
+  // 3. input comb signal from pre stage:
   input   [`CPU_WIDTH-1:0]      i_exu_exres   ,
   input   [`CPU_WIDTH-1:0]      i_exu_rs2     ,
   input   [`REG_ADDRW-1:0]      i_exu_rdid    ,
@@ -17,15 +21,21 @@ module lsu (
   input                         i_exu_sten    ,
   input   [`CPU_WIDTH-1:0]      s_exu_diffpc  ,
   
-  // 3. output comb signal to post stage:
+  // 4. output comb signal to post stage:
   output  [`CPU_WIDTH-1:0]      o_lsu_lsres   ,
   output  [`CPU_WIDTH-1:0]      o_lsu_exres   ,
   output                        o_lsu_lden    ,
   output  [`REG_ADDRW-1:0]      o_lsu_rdid    ,
   output                        o_lsu_rdwen   ,
-  // 4 for sim:
+  // 5 for sim:
   output  [`CPU_WIDTH-1:0]      s_lsu_diffpc
 );
+
+  assign UniIf_M.valid  = 0;
+  assign UniIf_M.addr   = 0;
+  assign UniIf_M.reqtyp = 0;
+  assign UniIf_M.wdata  = 0;
+  assign UniIf_M.size   = 0;
 
   // 1. shake hands to reg pre stage signals:////////////////////////////////s/////////////////////////////////
 

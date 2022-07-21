@@ -1,17 +1,11 @@
 `include "config.sv"
-module top(
-  input                 i_clk   ,
-  input                 i_rst_n
+module core_top(
+  input                 i_clk       ,
+  input                 i_rst_n     ,
+  uni_if.Master         UniIf_ifu_M ,
+  uni_if.Master         UniIf_lsu_M
 );
-  // 1.rst : ////////////////////////////////////////////////////////
-  logic rst_n_sync;
-  stl_rst u_stl_rst(
-  	.i_clk        (i_clk      ),
-    .i_rst_n      (i_rst_n    ),
-    .o_rst_n_sync (rst_n_sync )
-  );
-  
-  // 2.cpu:  ////////////////////////////////////////////////////////
+
   // control signals:
   logic [`CPU_WIDTH-1:0]  pre_pc;
   logic                   ifid_nop;               // for branch adventure
@@ -32,13 +26,14 @@ module top(
   logic [`INS_WIDTH-1:0]  ifu_ins;
 
   ifu u_ifu(
-    .i_clk        (i_clk        ),
-  	.i_rst_n      (rst_n_sync   ),
-    .o_post_valid (ifu_valid    ),
-    .i_post_ready (ifu_ready    ),
-    .i_next_pc    (pre_pc       ),
-    .o_ifu_pc     (ifu_pc       ),
-    .o_ifu_ins    (ifu_ins      )
+    .i_clk        (i_clk      ),
+  	.i_rst_n      (i_rst_n    ),
+    .UniIf_M      (UniIf_ifu_M),
+    .o_post_valid (ifu_valid  ),
+    .i_post_ready (ifu_ready  ),
+    .i_next_pc    (pre_pc     ),
+    .o_ifu_pc     (ifu_pc     ),
+    .o_ifu_ins    (ifu_ins    )
   );
 
   // 2.2 idu ////////////////////////////////////////////////////////
@@ -66,7 +61,7 @@ module top(
 
   idu u_idu(
     .i_clk         (i_clk        ),
-    .i_rst_n       (rst_n_sync   ),
+    .i_rst_n       (i_rst_n      ),
     .i_pre_nop     (ifid_nop     ),
     .i_pre_stall   (ifid_stall   ),
     .i_pre_valid   (ifu_valid    ),
@@ -110,7 +105,7 @@ module top(
 
   exu u_exu(
     .i_clk         (i_clk         ),
-    .i_rst_n       (rst_n_sync    ),
+    .i_rst_n       (i_rst_n       ),
     .i_pre_nop     (idex_nop      ),
     .i_pre_valid   (idu_valid     ),
     .o_pre_ready   (idu_ready     ),
@@ -150,7 +145,8 @@ module top(
 
   lsu u_lsu(
     .i_clk         (i_clk         ),
-    .i_rst_n       (rst_n_sync    ),
+    .i_rst_n       (i_rst_n       ),
+    .UniIf_M       (UniIf_lsu_M   ),
     .i_pre_valid   (exu_valid     ),
     .o_pre_ready   (exu_ready     ),
     .o_post_valid  (lsu_valid     ),
@@ -179,7 +175,7 @@ module top(
 
   wbu u_wbu(
     .i_clk        (i_clk        ),
-    .i_rst_n      (rst_n_sync   ),
+    .i_rst_n      (i_rst_n      ),
     .i_pre_valid  (lsu_valid    ),
     .o_pre_ready  (lsu_ready    ),
     .i_lsu_exres  (lsu_exres    ),
@@ -246,7 +242,7 @@ module top(
   import "DPI-C" function void check_rst(input bit rst_flag);
   import "DPI-C" function void diff_read_pc(input longint rtl_pc);
   always @(*) begin
-    check_rst(rst_n_sync);
+    check_rst(i_rst_n);
     diff_read_pc(s_wbu_diffpc);
   end
 
@@ -256,7 +252,7 @@ module top(
   wire [`CPU_WIDTH-1:0] s_wbu_ins;
   always@(*)begin
     rtl_pmem_read (s_wbu_diffpc, s_wbu_ins, i_rst_n);
-    if(check_finsih({s_wbu_ins & `CPU_WIDTH'h00000000FFFFFFFF}[`INS_WIDTH-1:0]))begin  //ins == ebreak.
+    if(check_finsih(s_wbu_ins[`INS_WIDTH-1:0]))begin  //ins == ebreak.
       $display("\n----------EBREAK: HIT !!%s!! TRAP!!---------------\n",s_a0zero? "GOOD":"BAD");
       $finish;
     end
@@ -265,10 +261,10 @@ module top(
   wire [`CPU_WIDTH-1:0] idu_ins;
   always@(*)begin
     rtl_pmem_read (idu_pc, idu_ins, i_rst_n);
-    if(rst_n_sync & (idu_pc >= 64'h80000000) & s_id_err[0]) $display("\n----------ins opcode error, pc = %x, ins = %x, opcode == %b---------------\n",idu_pc,idu_ins,idu_ins[ 6: 0] );
-    if(rst_n_sync & (idu_pc >= 64'h80000000) & s_id_err[1]) $display("\n----------ins funct3 error, pc = %x, ins = %x, funct3 == %b---------------\n",idu_pc,idu_ins,idu_ins[14:12] );
-    if(rst_n_sync & (idu_pc >= 64'h80000000) & s_id_err[2]) $display("\n----------ins funct7 error, pc = %x, ins = %x, funct7 == %b---------------\n",idu_pc,idu_ins,idu_ins[31:25] );
-    if(rst_n_sync & (idu_pc >= 64'h80000000) & |s_id_err ) $finish; //ins docode err.
+    if(i_rst_n & (idu_pc >= 64'h80000000) & s_id_err[0]) $display("\n----------ins opcode error, pc = %x, ins = %x, opcode == %b---------------\n",idu_pc,idu_ins,idu_ins[ 6: 0] );
+    if(i_rst_n & (idu_pc >= 64'h80000000) & s_id_err[1]) $display("\n----------ins funct3 error, pc = %x, ins = %x, funct3 == %b---------------\n",idu_pc,idu_ins,idu_ins[14:12] );
+    if(i_rst_n & (idu_pc >= 64'h80000000) & s_id_err[2]) $display("\n----------ins funct7 error, pc = %x, ins = %x, funct7 == %b---------------\n",idu_pc,idu_ins,idu_ins[31:25] );
+    if(i_rst_n & (idu_pc >= 64'h80000000) & |s_id_err ) $finish; //ins docode err.
   end
 
 endmodule

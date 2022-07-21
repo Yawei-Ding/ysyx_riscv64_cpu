@@ -5,6 +5,7 @@ module div#(
   input                     i_rst_n       ,
   input                     i_divw        ,
   input                     i_start       ,
+  output                    o_busy        ,
   output logic              o_end_valid   ,
   input                     i_end_ready   ,
   input                     i_signed      ,
@@ -19,15 +20,12 @@ module div#(
   
   logic [CNT_W-1:0] cnt;
 
-  logic start_valid, start_ready, div_start;
-  assign start_valid = i_start;
-  assign start_ready = (!(|cnt)) & (!o_end_valid);
-  assign div_start = start_valid & start_ready;
+  assign o_busy = (|cnt) | o_end_valid;
 
   always@(posedge i_clk or negedge i_rst_n)begin
     if(!i_rst_n)begin
       cnt <= {CNT_W{1'b0}};
-    end else if(div_start) begin
+    end else if(i_start) begin
       cnt <= i_divw ? {1'b0,{(CNT_W-1){1'b1}}} : {CNT_W{1'b1}}; // 31, 63.
     end else if(|cnt) begin // cnt != 0
       cnt <= cnt - 1;
@@ -64,7 +62,7 @@ module div#(
       dividend_r  <= {2*WIDTH{1'b0}};
       divisor_r   <= {  WIDTH{1'b0}};
       quotient_r  <= {  WIDTH{1'b0}};
-    end else if(div_start) begin
+    end else if(i_start) begin
       dividend_r  <= {{WIDTH{1'b0}}, i_dividend_abs};
       divisor_r   <= i_divisor_abs;
       quotient_r  <= {WIDTH{1'b0}};

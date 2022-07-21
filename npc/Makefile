@@ -7,7 +7,7 @@ SEARCHPATH := ./vsrc/core/other
 # 2.verilator flags:
 VERILATOR_FLAGS += -I${SEARCHPATH}
 VERILATOR_FLAGS += --top ${TOP_MODULE}
-VERILATOR_FLAGS += --trace --cc --exe --build
+VERILATOR_FLAGS += --trace --cc --exe --build -j 8
 VERILATOR_FLAGS += -Wno-fatal		# only print lint warning, but not terminate compile.
 VERILATOR_FLAGS += -Wno-UNUSED 		# close <unused> warning.
 VERILATOR_FLAGS += -Wno-PINMISSING	# close <pin missing> warning.
@@ -22,7 +22,7 @@ BIN := ${OBJ_DIR}/V${TOP_MODULE}#									# npc obj bin.
 RUN_FLAGS := --img=${IMG} --diff=${DIFFTEST}#						# npc main args.
 NPC_EXEC := ${BIN} ${RUN_FLAGS}#									# npc bin + args.
 
-.PHONY:sim wave clean
+.PHONY:run gdb wave clean
 
 com:${CSRC} ${VSRC}
 	@verilator ${VERILATOR_FLAGS} ${CSRC} ${VSRC} ${GCC_LDFLAGS}

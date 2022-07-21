@@ -47,7 +47,7 @@ module idu (
   // o_pre_ready <-- ⌊____⌋ <-- i_post_ready
 
   wire pipewen;
-  assign o_pre_ready = (!i_pre_stall) & ( o_post_valid & i_post_ready | !o_post_valid );
+  assign o_pre_ready =  o_post_valid & i_post_ready & (!i_pre_stall) | !o_post_valid ;
   assign pipewen = i_pre_valid & o_pre_ready;
 
   logic [`CPU_WIDTH-1:0] ifu_pc    ,ifu_pc_r;
