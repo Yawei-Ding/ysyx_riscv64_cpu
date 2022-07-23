@@ -49,17 +49,17 @@ module exu (
 
   // for more cycles alu, such as / % :
 
-  // i_pre_valid -->⌈‾‾‾‾⌉-->div_start-->⌈‾‾‾‾⌉-->div_end_valid |  --> o_post_valid
-  //                |REG|               |DIV |                 |  
-  // o_pre_ready <--⌊____⌋               ⌊____⌋<--div_end_ready |  <-- i_post_ready
+  // i_pre_valid -->⌈‾‾‾‾⌉-->valid -->div_start-->⌈‾‾‾‾⌉-->div_end_valid |  --> o_post_valid
+  //                |REG|                  ↑     |DIV |                 |  
+  // o_pre_ready <--⌊____⌋             div_busy<--⌊____⌋<--div_end_ready |  <-- i_post_ready
 
   logic alu_int, alu_mul, alu_div;
   logic one_cycle_valid;
   logic div_end_valid, div_end_ready;
 
-  wire prewen;
+  wire pre_sh;
   assign o_pre_ready =  alu_div ? (div_end_valid & div_end_ready): (o_post_valid & i_post_ready | !o_post_valid) ;
-  assign prewen = i_pre_valid & o_pre_ready;
+  assign pre_sh = i_pre_valid & o_pre_ready;
 
   stl_reg #(
     .WIDTH      (1              ), 
@@ -112,7 +112,7 @@ module exu (
   ) regs(
   	.i_clk      (i_clk   ),
     .i_rst_n    (i_rst_n ),
-    .i_wen      (prewen  ),
+    .i_wen      (pre_sh  ),
     .i_din      ({idu_imm  , idu_rs1  , idu_rs2  , idu_rdid  , idu_rdwen  , idu_exsrc  , idu_exopt  , idu_lsfunc3  , idu_lden  , idu_sten  , idu_ldstbp  , idu_pc  , idu_diffpc  } ),
     .o_dout     ({idu_imm_r, idu_rs1_r, idu_rs2_r, idu_rdid_r, idu_rdwen_r, idu_exsrc_r, idu_exopt_r, idu_lsfunc3_r, idu_lden_r, idu_sten_r, idu_ldstbp_r, idu_pc_r, idu_diffpc_r} )
   );

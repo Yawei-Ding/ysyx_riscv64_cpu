@@ -46,9 +46,9 @@ module idu (
   //                 |REG|
   // o_pre_ready <-- ⌊____⌋ <-- i_post_ready
 
-  wire pipewen;
+  wire pre_sh;
   assign o_pre_ready =  o_post_valid & i_post_ready & (!i_pre_stall) | !o_post_valid ;
-  assign pipewen = i_pre_valid & o_pre_ready;
+  assign pre_sh = i_pre_valid & o_pre_ready;
 
   logic [`CPU_WIDTH-1:0] ifu_pc    ,ifu_pc_r;
   logic [`INS_WIDTH-1:0] ifu_ins   ,ifu_ins_r;
@@ -64,7 +64,7 @@ module idu (
   ) prereg (
   	.i_clk      (i_clk                  ),
     .i_rst_n    (i_rst_n                ),
-    .i_wen      (pipewen                ),
+    .i_wen      (pre_sh                ),
     .i_din      ({ifu_ins  , ifu_pc  , ifu_diffpc  }),
     .o_dout     ({ifu_ins_r, ifu_pc_r, ifu_diffpc_r})
   );

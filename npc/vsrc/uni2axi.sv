@@ -182,7 +182,7 @@ module uni2axi # (
   // ------------------Write Transaction------------------
 
   // write addr channel:
-  assign AxiIf_M.aw_valid   = w_state_addr;
+  assign AxiIf_M.aw_valid   = w_state_addr & w_valid;
   assign AxiIf_M.aw_addr    = axi_addr;
   assign AxiIf_M.aw_len     = axi_len;
   assign AxiIf_M.aw_size    = axi_size;
@@ -202,8 +202,8 @@ module uni2axi # (
   assign AxiIf_M.w_valid    = w_state_write;
   assign AxiIf_M.w_last     = w_hs & (len == axi_len);
   assign AxiIf_M.w_user     = axi_user;                                                                         // no use.
-  wire [AXI_DATA_WIDTH-1:0] axi_w_data_l = (UniIf_S.wdata & mask_l) >> aligned_offset_l;
-  wire [AXI_DATA_WIDTH-1:0] axi_w_data_h = (UniIf_S.wdata & mask_h) << aligned_offset_h;
+  wire [AXI_DATA_WIDTH-1:0] axi_w_data_l = (UniIf_S.wdata << aligned_offset_l) & mask_l;
+  wire [AXI_DATA_WIDTH-1:0] axi_w_data_h = (UniIf_S.wdata >> aligned_offset_h) & mask_h;
   wire [AXI_STRB_WIDTH-1:0] axi_w_strb_l;
   wire [AXI_STRB_WIDTH-1:0] axi_w_strb_h;
 
@@ -212,41 +212,14 @@ module uni2axi # (
       assign axi_w_strb_h[i] = mask_h[8*i];
   end
 
-  generate
-      for(genvar i = 0; i < TRANS_LEN; i = i+1) begin
-          always@(*) begin
-              if(AxiIf_M.w_valid)	begin   // ? cycle not match!
-                  if (~aligned & overstep) begin
-                      if (len[0]) begin   // second write.
-                          AxiIf_M.w_data = axi_w_data_h;
-                          AxiIf_M.w_strb = axi_w_strb_h;
-                      end
-                      else begin          // first write.
-                          AxiIf_M.w_data = axi_w_data_l;
-                          AxiIf_M.w_strb = axi_w_strb_l;
-                      end
-                  end
-                  else if(len == i)	begin
-                      AxiIf_M.w_data = axi_w_data_l[i*AXI_DATA_WIDTH+:AXI_DATA_WIDTH];
-                      AxiIf_M.w_strb = axi_w_strb_l;
-                  end
-                  else begin
-                      AxiIf_M.w_data = 0;
-                      AxiIf_M.w_strb = 0;
-                  end
-              end
-            else begin
-                AxiIf_M.w_data = 0;
-                AxiIf_M.w_strb = 0;
-            end
-          end
-      end
-  endgenerate
+  // write only support uni_data_w == axi_data_w!
+  assign AxiIf_M.w_data = AxiIf_M.w_valid ? ( (~aligned & overstep & len[0]) ? axi_w_data_h : axi_w_data_l): {AXI_DATA_WIDTH{1'b0}};
+  assign AxiIf_M.w_strb = AxiIf_M.w_valid ? ( (~aligned & overstep & len[0]) ? axi_w_strb_h : axi_w_strb_l): {AXI_STRB_WIDTH{1'b0}};
 
   // ------------------Read Transaction------------------
 
   // Read address channel signals
-  assign AxiIf_M.ar_valid   = r_state_addr;
+  assign AxiIf_M.ar_valid   = r_state_addr & r_valid;
   assign AxiIf_M.ar_addr    = axi_addr;
   assign AxiIf_M.ar_prot    = `AXI_PROT_UNPRIVILEGED_ACCESS | `AXI_PROT_SECURE_ACCESS | `AXI_PROT_DATA_ACCESS;
   assign AxiIf_M.ar_id      = axi_id;

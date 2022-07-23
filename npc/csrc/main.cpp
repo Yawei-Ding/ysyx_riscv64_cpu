@@ -63,9 +63,7 @@ int main(int argc, char** argv, char** env) {
       lastpc = dut_pc;
 #endif
     }
-    else{
-      top->eval();
-    }
+    top->eval();
     dump_wave(contextp,tfp,top);
   }
 

@@ -73,21 +73,35 @@ module top(
   );
 
   // 3.arbite uni if://////////////////////////////////////////////
+  logic uniID;  // 1: lsu uni if, 0: ifu uni if. 
+
+  always_ff @(posedge i_clk or negedge i_rst_n) begin
+    if(!i_rst_n)begin
+      uniID <= 1'b0;
+    end
+    else if(lsu_uni_if.valid & lsu_uni_if.ready)begin
+      uniID <= 1'b0;
+    end
+    else if(ifu_uni_if.valid & ifu_uni_if.ready & lsu_uni_if.valid)begin
+      uniID <= 1'b1;
+    end
+  end
+
   uni_if #(.ADDR_W(`CPU_WIDTH), .DATA_W(`CPU_WIDTH)) uni_if();
 
-  assign uni_if.valid  = lsu_uni_if.valid | ifu_uni_if.valid;
-  assign uni_if.reqtyp = lsu_uni_if.valid ? lsu_uni_if.reqtyp : ifu_uni_if.reqtyp;
-  assign uni_if.addr   = lsu_uni_if.valid ? lsu_uni_if.addr   : ifu_uni_if.addr  ;
-  assign uni_if.wdata  = lsu_uni_if.valid ? lsu_uni_if.wdata  : ifu_uni_if.wdata ;
-  assign uni_if.size   = lsu_uni_if.valid ? lsu_uni_if.size   : ifu_uni_if.size  ;
+  assign uni_if.valid  = uniID ? lsu_uni_if.valid  : ifu_uni_if.valid ;
+  assign uni_if.reqtyp = uniID ? lsu_uni_if.reqtyp : ifu_uni_if.reqtyp;
+  assign uni_if.addr   = uniID ? lsu_uni_if.addr   : ifu_uni_if.addr  ;
+  assign uni_if.wdata  = uniID ? lsu_uni_if.wdata  : ifu_uni_if.wdata ;
+  assign uni_if.size   = uniID ? lsu_uni_if.size   : ifu_uni_if.size  ;
 
-  assign lsu_uni_if.ready = lsu_uni_if.valid ? uni_if.ready : 0; // under test.
-  assign lsu_uni_if.rdata = lsu_uni_if.valid ? uni_if.rdata : 0;
-  assign lsu_uni_if.resp  = lsu_uni_if.valid ? uni_if.resp  : 0;
+  assign lsu_uni_if.ready = uniID ? uni_if.ready : 0; // under test.
+  assign lsu_uni_if.rdata = uniID ? uni_if.rdata : 0;
+  assign lsu_uni_if.resp  = uniID ? uni_if.resp  : 0;
 
-  assign ifu_uni_if.ready = lsu_uni_if.valid ? 0 : uni_if.ready; // under test.
-  assign ifu_uni_if.rdata = lsu_uni_if.valid ? 0 : uni_if.rdata;
-  assign ifu_uni_if.resp  = lsu_uni_if.valid ? 0 : uni_if.resp ;
+  assign ifu_uni_if.ready = uniID ? 0 : uni_if.ready; // under test.
+  assign ifu_uni_if.rdata = uniID ? 0 : uni_if.rdata;
+  assign ifu_uni_if.resp  = uniID ? 0 : uni_if.resp ;
 
   // 4.uni_if 2 axi_if : //////////////////////////////////////////
 

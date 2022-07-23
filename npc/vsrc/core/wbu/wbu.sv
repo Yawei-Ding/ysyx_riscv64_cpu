@@ -28,9 +28,9 @@ module wbu (
   //                 |REG|
   // o_pre_ready <-- ⌊____⌋ <-- i_post_ready
 
-  wire pipewen;
+  wire pre_sh;
   assign o_pre_ready = o_post_valid & i_post_ready | !o_post_valid;
-  assign pipewen = i_pre_valid & o_pre_ready;
+  assign pre_sh = i_pre_valid & o_pre_ready;
 
   logic [`CPU_WIDTH-1:0]  lsu_exres_r  ;
   logic [`CPU_WIDTH-1:0]  lsu_lsres_r  ;
@@ -45,7 +45,7 @@ module wbu (
   ) regs(
   	.i_clk      (i_clk   ),
     .i_rst_n    (i_rst_n ),
-    .i_wen      (pipewen ),
+    .i_wen      (pre_sh ),
     .i_din      ({i_lsu_exres, i_lsu_lsres, i_lsu_rdid, i_lsu_rdwen, i_lsu_lden, s_lsu_diffpc} ),
     .o_dout     ({lsu_exres_r, lsu_lsres_r, lsu_rdid_r, lsu_rdwen_r, lsu_lden_r, lsu_diffpc_r} )
   );
