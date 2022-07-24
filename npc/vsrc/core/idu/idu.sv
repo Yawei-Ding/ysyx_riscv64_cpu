@@ -37,6 +37,7 @@ module idu (
   output logic [`CPU_WIDTH-1:0]     o_idu_pc      ,
   // 4 for sim:
   output logic [`CPU_WIDTH-1:0]     s_idu_diffpc  ,
+  output logic [`INS_WIDTH-1:0]     s_idu_ins     ,
   output logic [2:0]                s_idu_iderr     // bit0:opc_err, bit1:func3_err, bit2:func7_err
 );
 
@@ -54,7 +55,7 @@ module idu (
   logic [`INS_WIDTH-1:0] ifu_ins   ,ifu_ins_r;
   logic [`CPU_WIDTH-1:0] ifu_diffpc,ifu_diffpc_r;
 
-  assign ifu_pc      = i_ifu_pc;
+  assign ifu_pc     = i_ifu_pc;
   assign ifu_ins    = i_pre_nop ? `INS_WIDTH'h13 : i_ifu_ins;  // 0x13 == ADDI x0,x0,0 == nop.
   assign ifu_diffpc = i_pre_nop ? `CPU_WIDTH'b0  : i_ifu_pc;   // use for sim, branch nop diffpc == 0
 
@@ -105,5 +106,6 @@ module idu (
 
   assign o_idu_pc     = ifu_pc_r    ;
   assign s_idu_diffpc = ifu_diffpc_r;
+  assign s_idu_ins    = ifu_ins_r   ;
 
 endmodule

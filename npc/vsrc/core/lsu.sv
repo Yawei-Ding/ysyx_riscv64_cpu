@@ -20,6 +20,7 @@ module lsu (
   input                         i_exu_lden    ,
   input                         i_exu_sten    ,
   input   [`CPU_WIDTH-1:0]      s_exu_diffpc  ,
+  input   [`INS_WIDTH-1:0]      s_exu_ins     ,
   
   // 4. output comb signal to post stage:
   output  [`CPU_WIDTH-1:0]      o_lsu_lsres   ,
@@ -28,7 +29,8 @@ module lsu (
   output  [`REG_ADDRW-1:0]      o_lsu_rdid    ,
   output                        o_lsu_rdwen   ,
   // 5 for sim:
-  output  [`CPU_WIDTH-1:0]      s_lsu_diffpc
+  output  [`CPU_WIDTH-1:0]      s_lsu_diffpc  ,
+  output  [`INS_WIDTH-1:0]      s_lsu_ins
 );
 
   // 1. shake hands to reg pre stage signals:////////////////////////////////s/////////////////////////////////
@@ -37,10 +39,9 @@ module lsu (
   //                 |REG|
   // o_pre_ready <-- ⌊____⌋ <-- i_post_ready
 
-
   assign o_pre_ready =  ldst_en ? (o_post_valid & i_post_ready) : (o_post_valid & i_post_ready | !o_post_valid) ;
   wire pre_sh = i_pre_valid & o_pre_ready;
-  wire temp_valid;
+  wire pre_valid_r;
 
   stl_reg #(
     .WIDTH      (1           ), 
@@ -50,10 +51,10 @@ module lsu (
     .i_rst_n    (i_rst_n     ), 
     .i_wen      (o_pre_ready ), 
     .i_din      (i_pre_valid ), 
-    .o_dout     (temp_valid  )
+    .o_dout     (pre_valid_r )
   );
   
-  assign o_post_valid   = ldst_en ? UniIf_M.ready : temp_valid;
+  assign o_post_valid   = ldst_en ? UniIf_M.ready : pre_valid_r;
 
   logic  [`CPU_WIDTH-1:0]  exu_exres_r    ;
   logic  [`CPU_WIDTH-1:0]  exu_rs2_r      ;
@@ -63,22 +64,23 @@ module lsu (
   logic                    exu_lden_r     ;
   logic                    exu_sten_r     ;
   logic  [`CPU_WIDTH-1:0]  exu_diffpc_r   ;
+  logic  [`INS_WIDTH-1:0]  exu_ins_r      ;
 
   stl_reg #(
-    .WIDTH      (3*`CPU_WIDTH+`REG_ADDRW+6),
+    .WIDTH      (3*`CPU_WIDTH+`REG_ADDRW+6+`INS_WIDTH),
     .RESET_VAL  (0       )
   ) prereg (
   	.i_clk      (i_clk   ),
     .i_rst_n    (i_rst_n ),
     .i_wen      (pre_sh ),
-    .i_din      ({i_exu_exres, i_exu_rs2, i_exu_rdid, i_exu_rdwen, i_exu_lsfunc3, i_exu_lden, i_exu_sten, s_exu_diffpc} ),
-    .o_dout     ({exu_exres_r, exu_rs2_r, exu_rdid_r, exu_rdwen_r, exu_lsfunc3_r, exu_lden_r, exu_sten_r, exu_diffpc_r} )
+    .i_din      ({i_exu_exres, i_exu_rs2, i_exu_rdid, i_exu_rdwen, i_exu_lsfunc3, i_exu_lden, i_exu_sten, s_exu_diffpc,s_exu_ins} ),
+    .o_dout     ({exu_exres_r, exu_rs2_r, exu_rdid_r, exu_rdwen_r, exu_lsfunc3_r, exu_lden_r, exu_sten_r, exu_diffpc_r,exu_ins_r} )
   );
 
   // 2. use interface to read/write, generate valid signals for post stage:////////////////////////////////////
 
-  wire load_en = temp_valid & exu_lden_r;
-  wire stor_en = temp_valid & exu_sten_r;
+  wire load_en = pre_valid_r & exu_lden_r;
+  wire stor_en = pre_valid_r & exu_sten_r;
   wire ldst_en = load_en | stor_en ;
 
   assign UniIf_M.valid  = ldst_en ;
@@ -137,5 +139,6 @@ module lsu (
   assign  o_lsu_rdid   = exu_rdid_r   ;
   assign  o_lsu_rdwen  = exu_rdwen_r  ;
   assign  s_lsu_diffpc = exu_diffpc_r ;
-
+  assign  s_lsu_ins    = exu_ins_r    ;
+  
 endmodule

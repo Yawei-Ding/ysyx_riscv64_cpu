@@ -3,6 +3,20 @@
 
 char *img_file = NULL;
 static char *diff_so_file = NULL;
+static int parse_args(int argc, char *argv[]);
+
+void npc_init(int argc, char *argv[],axi4_mem <64,64,4> *mem) {
+  // Parse arguments.
+  parse_args(argc, argv);
+
+  // Load the image to memory.
+  mem->load_binary(img_file,0x80000000);
+
+#ifdef  DIFFTEST_ON
+  // Initialize differential testing.
+  difftest_init(diff_so_file, img_file);
+#endif
+}
 
 static int parse_args(int argc, char *argv[]) {
   const struct option table[] = {
@@ -18,50 +32,4 @@ static int parse_args(int argc, char *argv[]) {
     }
   }
   return 0;
-}
-
-extern uint8_t pmem[PMEM_MSIZE];  // use for load_img
-static long load_img(char *img_file) {
-  if (img_file == NULL) {
-    printf("No image is given. Use the default build-in image.\n");
-    return 4096; // built-in image size
-  }
-
-  FILE *fp = fopen(img_file, "rb");
-  if(fp == NULL){
-    printf("Can not open '%s'\n", img_file);
-    assert(0); 
-  }
-
-  fseek(fp, 0, SEEK_END); // move cur to end.
-  long size = ftell(fp);
-
-  //printf("The image is %s, size = %ld\n", img_file, size);
-
-  fseek(fp, 0, SEEK_SET);
-  int ret = fread(pmem, size, 1, fp);
-  assert(ret == 1);
-
-  //for(uint32_t i=0;i<size;i=i+4)
-  //  printf("0x%08x, 0x%08lx\n",PMEM_START+i,pmem_read(PMEM_START+i,4));
-
-  fclose(fp);
-  return size;
-}
-
-void npc_init(int argc, char *argv[],axi4_mem <64,64,4> *mem) {
-  /* Perform some global initialization. */
-
-  /* Parse arguments. */
-  parse_args(argc, argv);
-
-  /* Load the image to memory. This will overwrite the built-in image. */
-  long img_size = load_img(img_file);     // for DPI-C
-  
-  mem->load_binary(img_file,0x80000000);  // for AXI
-
-#ifdef  DIFFTEST_ON
-  /* Initialize differential testing. */
-  difftest_init(diff_so_file, img_size);
-#endif
 }

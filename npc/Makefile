@@ -7,7 +7,7 @@ SEARCHPATH := ./vsrc/core/other
 # 2.verilator flags:
 VERILATOR_FLAGS += -I${SEARCHPATH}
 VERILATOR_FLAGS += --top ${TOP_MODULE}
-VERILATOR_FLAGS += --trace --cc --exe --build -j 8
+VERILATOR_FLAGS += --trace --cc --exe --build --threads 2 -j 8
 VERILATOR_FLAGS += -Wno-fatal		# only print lint warning, but not terminate compile.
 VERILATOR_FLAGS += -Wno-UNUSED 		# close <unused> warning.
 VERILATOR_FLAGS += -Wno-PINMISSING	# close <pin missing> warning.
@@ -29,7 +29,7 @@ com:${CSRC} ${VSRC}
 
 run:com
 	$(call git_commit, "sim RTL") # DO NOT REMOVE THIS LINE!!!
-	${NPC_EXEC}
+	@${NPC_EXEC}
 
 gdb:com ${DIFFTEST}
 	$(call git_commit, "gdb RTL") # DO NOT REMOVE THIS LINE!!!

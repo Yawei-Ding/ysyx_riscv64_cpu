@@ -19,7 +19,8 @@ module core_top(
   // simulation signals:
   logic [2:0]             s_id_err ;
   logic                   s_a0zero ;
-  logic [`CPU_WIDTH-1:0]  s_idu_diffpc,s_exu_diffpc,s_lsu_diffpc,s_wbu_diffpc;
+  logic [`CPU_WIDTH-1:0]  s_idu_diffpc, s_exu_diffpc, s_lsu_diffpc, s_wbu_diffpc;
+  logic [`INS_WIDTH-1:0]  s_idu_ins   , s_exu_ins   , s_lsu_ins   , s_wbu_ins   ;
 
   // 2.1 ifu ////////////////////////////////////////////////////////
   logic [`CPU_WIDTH-1:0]  ifu_pc ;
@@ -86,7 +87,8 @@ module core_top(
     .o_idu_bfun3   (idu_bfun3    ),
     .o_idu_pc      (idu_pc       ),
     .s_idu_diffpc  (s_idu_diffpc ),
-    .s_idu_iderr   (s_id_err     )
+    .s_idu_iderr   (s_id_err     ),
+    .s_idu_ins     (s_idu_ins    )
   );
 
   // 2.3 exu ///////////////////////////////////////////////
@@ -124,6 +126,7 @@ module core_top(
     .i_idu_ldstbp  (idu_ldstbp    ),
     .i_idu_pc      (idu_pc        ),
     .s_idu_diffpc  (s_idu_diffpc  ),
+    .s_idu_ins     (s_idu_ins     ),
     .o_exu_res     (exu_exres     ),
     .o_exu_rs2     (exu_rs2       ),
     .o_exu_lsfunc3 (exu_lsfunc3   ),
@@ -132,7 +135,8 @@ module core_top(
     .o_exu_ldstbp  (exu_ldstbp    ),
     .o_exu_rdid    (exu_rdid      ),
     .o_exu_rdwen   (exu_rdwen     ),
-    .s_exu_diffpc  (s_exu_diffpc  )
+    .s_exu_diffpc  (s_exu_diffpc  ),
+    .s_exu_ins     (s_exu_ins     )
   );
 
   // 2.4 lsu ///////////////////////////////////////////////
@@ -159,12 +163,14 @@ module core_top(
     .i_exu_lden    (exu_lden      ),
     .i_exu_sten    (exu_sten      ),
     .s_exu_diffpc  (s_exu_diffpc  ),
+    .s_exu_ins     (s_exu_ins     ),
     .o_lsu_lsres   (lsu_lsres     ),
     .o_lsu_exres   (lsu_exres     ),
     .o_lsu_lden    (lsu_lden      ),
     .o_lsu_rdid    (lsu_rdid      ),
     .o_lsu_rdwen   (lsu_rdwen     ),
-    .s_lsu_diffpc  (s_lsu_diffpc  )
+    .s_lsu_diffpc  (s_lsu_diffpc  ),
+    .s_lsu_ins     (s_lsu_ins     )
   );
 
   // 2.5 wbu ///////////////////////////////////////////////
@@ -184,10 +190,12 @@ module core_top(
     .i_lsu_rdwen  (lsu_rdwen    ),
     .i_lsu_lden   (lsu_lden     ),
     .s_lsu_diffpc (s_lsu_diffpc ),
+    .s_lsu_ins    (s_lsu_ins    ),
     .o_wbu_rdwen  (wbu_rdwen    ),
     .o_wbu_rd     (wbu_rd       ),
     .o_wbu_rdid   (wbu_rdid     ),
-    .s_wbu_diffpc (s_wbu_diffpc )
+    .s_wbu_diffpc (s_wbu_diffpc ),
+    .s_wbu_ins    (s_wbu_ins    )
   );
 
   // 2.6 bypass, regfile read/write. ///////////////////////
@@ -224,6 +232,11 @@ module core_top(
   // 2.7 bru ///////////////////////////////////////////////
 
   bru u_bru(
+    .i_clk      (i_clk      ),
+    .i_rst_n    (i_rst_n    ),
+    .i_idu_valid(idu_valid  ),
+    .i_idu_rs1id(idu_rs1id  ),
+    .i_exu_rdid (exu_rdid   ),
     .i_jal      (idu_jal    ),
     .i_jalr     (idu_jalr   ),
     .i_brch     (idu_brch   ),
@@ -247,23 +260,20 @@ module core_top(
   end
 
   // 3.2 update wb stage finish.
-  import "DPI-C" function void rtl_pmem_read (input longint raddr, output longint rdata, input bit ren);
   import "DPI-C" function bit check_finsih(input int ins);
-  wire [`CPU_WIDTH-1:0] s_wbu_ins;
+
   always@(*)begin
-    rtl_pmem_read (s_wbu_diffpc, s_wbu_ins, i_rst_n);
     if(check_finsih(s_wbu_ins[`INS_WIDTH-1:0]))begin  //ins == ebreak.
       $display("\n----------EBREAK: HIT !!%s!! TRAP!!---------------\n",s_a0zero? "GOOD":"BAD");
       $finish;
     end
   end
-
-  wire [`CPU_WIDTH-1:0] idu_ins;
+  
+  // 3.3 check id error.
   always@(*)begin
-    rtl_pmem_read (idu_pc, idu_ins, i_rst_n);
-    if(i_rst_n & (idu_pc >= 64'h80000000) & s_id_err[0]) $display("\n----------ins opcode error, pc = %x, ins = %x, opcode == %b---------------\n",idu_pc,idu_ins,idu_ins[ 6: 0] );
-    if(i_rst_n & (idu_pc >= 64'h80000000) & s_id_err[1]) $display("\n----------ins funct3 error, pc = %x, ins = %x, funct3 == %b---------------\n",idu_pc,idu_ins,idu_ins[14:12] );
-    if(i_rst_n & (idu_pc >= 64'h80000000) & s_id_err[2]) $display("\n----------ins funct7 error, pc = %x, ins = %x, funct7 == %b---------------\n",idu_pc,idu_ins,idu_ins[31:25] );
+    if(i_rst_n & (idu_pc >= 64'h80000000) & s_id_err[0]) $display("\n----------ins opcode error, pc = %x, ins = %x, opcode == %b---------------\n",idu_pc,s_idu_ins,s_idu_ins[ 6: 0] );
+    if(i_rst_n & (idu_pc >= 64'h80000000) & s_id_err[1]) $display("\n----------ins funct3 error, pc = %x, ins = %x, funct3 == %b---------------\n",idu_pc,s_idu_ins,s_idu_ins[14:12] );
+    if(i_rst_n & (idu_pc >= 64'h80000000) & s_id_err[2]) $display("\n----------ins funct7 error, pc = %x, ins = %x, funct7 == %b---------------\n",idu_pc,s_idu_ins,s_idu_ins[31:25] );
     if(i_rst_n & (idu_pc >= 64'h80000000) & |s_id_err ) $finish; //ins docode err.
   end
 

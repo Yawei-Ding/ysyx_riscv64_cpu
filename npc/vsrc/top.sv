@@ -95,11 +95,11 @@ module top(
   assign uni_if.wdata  = uniID ? lsu_uni_if.wdata  : ifu_uni_if.wdata ;
   assign uni_if.size   = uniID ? lsu_uni_if.size   : ifu_uni_if.size  ;
 
-  assign lsu_uni_if.ready = uniID ? uni_if.ready : 0; // under test.
+  assign lsu_uni_if.ready = uniID ? uni_if.ready : 0;
   assign lsu_uni_if.rdata = uniID ? uni_if.rdata : 0;
   assign lsu_uni_if.resp  = uniID ? uni_if.resp  : 0;
 
-  assign ifu_uni_if.ready = uniID ? 0 : uni_if.ready; // under test.
+  assign ifu_uni_if.ready = uniID ? 0 : uni_if.ready;
   assign ifu_uni_if.rdata = uniID ? 0 : uni_if.rdata;
   assign ifu_uni_if.resp  = uniID ? 0 : uni_if.resp ;
 

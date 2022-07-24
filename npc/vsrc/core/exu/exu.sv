@@ -23,6 +23,7 @@ module exu (
   input                             i_idu_ldstbp  ,
   input     [`CPU_WIDTH-1:0]        i_idu_pc      ,
   input     [`CPU_WIDTH-1:0]        s_idu_diffpc  ,
+  input     [`INS_WIDTH-1:0]        s_idu_ins     ,
   
   // 3. output comb signal to post stage:
   // 3.1 exu output value:
@@ -37,7 +38,8 @@ module exu (
   output    [`REG_ADDRW-1:0]        o_exu_rdid    ,
   output                            o_exu_rdwen   ,
   // 4 for sim:
-  output    [`CPU_WIDTH-1:0]        s_exu_diffpc
+  output    [`CPU_WIDTH-1:0]        s_exu_diffpc  ,
+  output    [`INS_WIDTH-1:0]        s_exu_ins
 );
 
   // 1. shake hands://///////////////////////////////////////////////////////////////////////////////////////
@@ -49,48 +51,47 @@ module exu (
 
   // for more cycles alu, such as / % :
 
-  // i_pre_valid -->⌈‾‾‾‾⌉-->valid -->div_start-->⌈‾‾‾‾⌉-->div_end_valid |  --> o_post_valid
-  //                |REG|                  ↑     |DIV |                 |  
-  // o_pre_ready <--⌊____⌋             div_busy<--⌊____⌋<--div_end_ready |  <-- i_post_ready
+  // i_pre_valid -->⌈‾‾‾‾⌉-->pre_valid_r -->div_start-->⌈‾‾‾‾⌉-->div_end_valid |  --> o_post_valid
+  //                |REG|                        ↑     |DIV |                 |  
+  // o_pre_ready <--⌊____⌋                   div_busy<--⌊____⌋<--div_end_ready |  <-- i_post_ready
 
   logic alu_int, alu_mul, alu_div;
-  logic one_cycle_valid;
-  logic div_end_valid, div_end_ready;
+  logic pre_valid_r, div_end_valid, div_end_ready;
 
   wire pre_sh;
   assign o_pre_ready =  alu_div ? (div_end_valid & div_end_ready): (o_post_valid & i_post_ready | !o_post_valid) ;
   assign pre_sh = i_pre_valid & o_pre_ready;
 
   stl_reg #(
-    .WIDTH      (1              ), 
-    .RESET_VAL  (0              )
+    .WIDTH      (1            ), 
+    .RESET_VAL  (0            )
   ) postvalid ( 
-  	.i_clk      (i_clk          ), 
-    .i_rst_n    (i_rst_n        ), 
-    .i_wen      (o_pre_ready    ), 
-    .i_din      (i_pre_valid    ), 
-    .o_dout     (one_cycle_valid)
+  	.i_clk      (i_clk        ), 
+    .i_rst_n    (i_rst_n      ), 
+    .i_wen      (o_pre_ready  ), 
+    .i_din      (i_pre_valid  ), 
+    .o_dout     (pre_valid_r  )
   );
 
   assign div_end_ready = alu_div ? i_post_ready : 1'b0;
-  assign o_post_valid = alu_div ? div_end_valid : one_cycle_valid;
-
+  assign o_post_valid = alu_div ? div_end_valid : pre_valid_r;
 
  //  2. reg pre stage signals: ///////////////////////////////////////////////////////////////////////////////
 
-  logic  [`CPU_WIDTH-1:0]      idu_imm     ,idu_imm_r     ;
-  logic  [`CPU_WIDTH-1:0]      idu_rs1     ,idu_rs1_r     ;
-  logic  [`CPU_WIDTH-1:0]      idu_rs2     ,idu_rs2_r     ;
-  logic  [`REG_ADDRW-1:0]      idu_rdid    ,idu_rdid_r    ;
-  logic                        idu_rdwen   ,idu_rdwen_r   ;
-  logic  [`EXU_SEL_WIDTH-1:0]  idu_exsrc   ,idu_exsrc_r   ;
-  logic  [`EXU_OPT_WIDTH-1:0]  idu_exopt   ,idu_exopt_r   ;
-  logic  [2:0]                 idu_lsfunc3 ,idu_lsfunc3_r ;
-  logic                        idu_lden    ,idu_lden_r    ;
-  logic                        idu_sten    ,idu_sten_r    ;
-  logic                        idu_ldstbp  ,idu_ldstbp_r  ;
-  logic  [`CPU_WIDTH-1:0]      idu_pc      ,idu_pc_r      ;
-  logic  [`CPU_WIDTH-1:0]      idu_diffpc  ,idu_diffpc_r  ;
+  logic  [`CPU_WIDTH-1:0]      idu_imm    , idu_imm_r     ;
+  logic  [`CPU_WIDTH-1:0]      idu_rs1    , idu_rs1_r     ;
+  logic  [`CPU_WIDTH-1:0]      idu_rs2    , idu_rs2_r     ;
+  logic  [`REG_ADDRW-1:0]      idu_rdid   , idu_rdid_r    ;
+  logic                        idu_rdwen  , idu_rdwen_r   ;
+  logic  [`EXU_SEL_WIDTH-1:0]  idu_exsrc  , idu_exsrc_r   ;
+  logic  [`EXU_OPT_WIDTH-1:0]  idu_exopt  , idu_exopt_r   ;
+  logic  [2:0]                 idu_lsfunc3, idu_lsfunc3_r ;
+  logic                        idu_lden   , idu_lden_r    ;
+  logic                        idu_sten   , idu_sten_r    ;
+  logic                        idu_ldstbp , idu_ldstbp_r  ;
+  logic  [`CPU_WIDTH-1:0]      idu_pc     , idu_pc_r      ;
+  logic  [`CPU_WIDTH-1:0]      idu_diffpc , idu_diffpc_r  ;
+  logic  [`INS_WIDTH-1:0]      idu_ins    , idu_ins_r     ;
 
   assign idu_imm     = i_pre_nop ? `CPU_WIDTH'b0 : i_idu_imm     ;
   assign idu_rs1     = i_pre_nop ? `CPU_WIDTH'b0 : i_idu_rs1     ;
@@ -105,16 +106,17 @@ module exu (
   assign idu_ldstbp  = i_pre_nop ?  1'b0         : i_idu_ldstbp  ;
   assign idu_pc      = i_idu_pc ;
   assign idu_diffpc  = i_pre_nop ? `CPU_WIDTH'b1 : s_idu_diffpc  ; // use for sim, diffpc == 1 means data nop.
+  assign idu_ins     = i_pre_nop ? `INS_WIDTH'b0 : s_idu_ins     ;
 
   stl_reg #(
-    .WIDTH      (5*`CPU_WIDTH+`REG_ADDRW+7+`EXU_SEL_WIDTH+`EXU_OPT_WIDTH),
+    .WIDTH      (5*`CPU_WIDTH+`REG_ADDRW+7+`EXU_SEL_WIDTH+`EXU_OPT_WIDTH+`INS_WIDTH),
     .RESET_VAL  (0       )
   ) regs(
   	.i_clk      (i_clk   ),
     .i_rst_n    (i_rst_n ),
     .i_wen      (pre_sh  ),
-    .i_din      ({idu_imm  , idu_rs1  , idu_rs2  , idu_rdid  , idu_rdwen  , idu_exsrc  , idu_exopt  , idu_lsfunc3  , idu_lden  , idu_sten  , idu_ldstbp  , idu_pc  , idu_diffpc  } ),
-    .o_dout     ({idu_imm_r, idu_rs1_r, idu_rs2_r, idu_rdid_r, idu_rdwen_r, idu_exsrc_r, idu_exopt_r, idu_lsfunc3_r, idu_lden_r, idu_sten_r, idu_ldstbp_r, idu_pc_r, idu_diffpc_r} )
+    .i_din      ({idu_imm  , idu_rs1  , idu_rs2  , idu_rdid  , idu_rdwen  , idu_exsrc  , idu_exopt  , idu_lsfunc3  , idu_lden  , idu_sten  , idu_ldstbp  , idu_pc  , idu_diffpc  ,idu_ins  } ),
+    .o_dout     ({idu_imm_r, idu_rs1_r, idu_rs2_r, idu_rdid_r, idu_rdwen_r, idu_exsrc_r, idu_exopt_r, idu_lsfunc3_r, idu_lden_r, idu_sten_r, idu_ldstbp_r, idu_pc_r, idu_diffpc_r,idu_ins_r} )
   );
 
   // 3. use pre stage signals to generate comb logic for post stage://////////////////////////////////////////
@@ -128,6 +130,7 @@ module exu (
   assign o_exu_rdid    = idu_rdid_r   ;
   assign o_exu_rdwen   = idu_rdwen_r  ;
   assign s_exu_diffpc  = idu_diffpc_r ;
+  assign s_exu_ins     = idu_ins_r    ;
 
   logic [`CPU_WIDTH-1:0] src1,src2;
 
@@ -210,7 +213,7 @@ module exu (
   logic [`CPU_WIDTH-1:0] dividend, divisor, quotient, remainder;
   
   logic div_busy;
-  wire div_start = (alu_div & one_cycle_valid) & !div_busy;
+  wire div_start = (alu_div & pre_valid_r) & !div_busy;
 
   div #(.WIDTH (`CPU_WIDTH )) u_div(
     .i_clk          (i_clk         ),
