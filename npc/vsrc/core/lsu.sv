@@ -30,7 +30,8 @@ module lsu (
   output                        o_lsu_rdwen   ,
   // 5 for sim:
   output  [`CPU_WIDTH-1:0]      s_lsu_diffpc  ,
-  output  [`INS_WIDTH-1:0]      s_lsu_ins
+  output  [`INS_WIDTH-1:0]      s_lsu_ins     ,
+  output                        s_lsu_device   //  1: write/read device, 0: no use device.
 );
 
   // 1. shake hands to reg pre stage signals:////////////////////////////////s/////////////////////////////////
@@ -140,5 +141,6 @@ module lsu (
   assign  o_lsu_rdwen  = exu_rdwen_r  ;
   assign  s_lsu_diffpc = exu_diffpc_r ;
   assign  s_lsu_ins    = exu_ins_r    ;
-  
+  assign  s_lsu_device = (UniIf_M.addr >= `CPU_WIDTH'h10000000 & UniIf_M.addr <= `CPU_WIDTH'h10000fff);
+
 endmodule

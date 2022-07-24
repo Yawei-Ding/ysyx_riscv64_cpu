@@ -18,18 +18,20 @@ public:
     }
     bool add_dev(unsigned long start_addr, unsigned long length, mmio_dev *dev) {
         std::pair<unsigned long, unsigned long> addr_range = std::make_pair(start_addr,start_addr+length);
-        if (start_addr % length) return false;
+        if (start_addr % length) return false;    // comment by dignyawei.
         // check range
         auto it = devices.upper_bound(addr_range);
         if (it != devices.end()) {
             unsigned long l_max = std::max(it->first.first,addr_range.first);
             unsigned long r_min = std::min(it->first.second,addr_range.second);
+            printf("end, l_max= %ld, l_min = %ld\n",l_max,r_min);
             if (l_max < r_min) return false; // overleap
         }
         if (it != devices.begin()) {
             it = std::prev(it);
             unsigned long l_max = std::max(it->first.first,addr_range.first);
             unsigned long r_min = std::min(it->first.second,addr_range.second);
+            printf("begin, l_max= %ld, l_min = %ld\n",l_max,r_min);
             if (l_max < r_min) return false; // overleap
         }
         // overleap check pass

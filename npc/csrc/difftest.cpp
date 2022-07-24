@@ -11,7 +11,6 @@ void (*ref_difftest_memcpy)(uint64_t addr, void *buf, size_t n, bool direction) 
 void (*ref_difftest_regcpy)(void *dut, bool direction) = NULL;
 void (*ref_difftest_exec)(uint64_t n) = NULL;
 void (*ref_difftest_raise_intr)(uint64_t NO) = NULL;
-void cp2ref_memory(char *img_file);
 
 void difftest_init(char *ref_so_file, char *img_file) {
   assert(ref_so_file != NULL);
@@ -36,10 +35,10 @@ void difftest_init(char *ref_so_file, char *img_file) {
   assert(ref_difftest_init);
 
   ref_difftest_init();
-  cp2ref_memory(img_file);
 
-  regfile dut = pack_dut_regfile(dut_reg, INST_START);
-  ref_difftest_regcpy(&dut, DIFFTEST_TO_REF);
+  cp2ref_memory(img_file);
+  cp2ref_reg(INST_START);
+
 }
 
 bool difftest_check() {
@@ -51,6 +50,11 @@ bool difftest_check() {
 
 void difftest_step() {
   ref_difftest_exec(1);
+}
+
+void cp2ref_reg(uint64_t pc){
+  regfile dut = pack_dut_regfile(dut_reg, pc);
+  ref_difftest_regcpy(&dut, DIFFTEST_TO_REF);
 }
 
 void cp2ref_memory(char *img_file) {

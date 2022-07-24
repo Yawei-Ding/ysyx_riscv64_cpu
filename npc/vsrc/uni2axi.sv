@@ -50,7 +50,7 @@ module uni2axi # (
   input                               i_clk   ,
   input                               i_rst_n ,
   uni_if.Slave                        UniIf_S ,
-  axi4_if.Master                      AxiIf_M      
+  axi4_if.Master                      AxiIf_M
 );
 
   wire w_trans    = UniIf_S.reqtyp == 1'b1;

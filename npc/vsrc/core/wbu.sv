@@ -13,6 +13,7 @@ module wbu (
   input                         i_lsu_lden    ,
   input   [`CPU_WIDTH-1:0]      s_lsu_diffpc  ,
   input   [`INS_WIDTH-1:0]      s_lsu_ins     ,
+  input                         s_lsu_device  ,
 
   // 3. output comb signal to post stage:
   output                        o_wbu_rdwen   ,
@@ -20,10 +21,11 @@ module wbu (
   output  [`REG_ADDRW-1:0]      o_wbu_rdid    ,
   // 4 for sim:
   output  [`CPU_WIDTH-1:0]      s_wbu_diffpc  ,
-  output  [`INS_WIDTH-1:0]      s_wbu_ins
+  output  [`INS_WIDTH-1:0]      s_wbu_ins     ,
+  output                        s_wbu_device
 );
 
-  // 1. shake hands to reg pre stage signals:////////////////////////////////s/////////////////////////////////
+  // 1. shake hands to reg pre stage signals:///////////////////////////////////////////////////////////////////
 
   // i_pre_valid --> ⌈‾‾‾‾⌉ --> o_post_valid
   //                 |REG|
@@ -40,16 +42,17 @@ module wbu (
   logic                   lsu_lden_r   ;
   logic [`CPU_WIDTH-1:0]  lsu_diffpc_r ;
   logic [`INS_WIDTH-1:0]  lsu_ins_r    ;
+  logic                   lsu_device_r ;
 
   stl_reg #(
-    .WIDTH      (3*`CPU_WIDTH+`REG_ADDRW+2+`INS_WIDTH),
+    .WIDTH      (3*`CPU_WIDTH+`REG_ADDRW+2+`INS_WIDTH+1),
     .RESET_VAL  (0       )
   ) regs(
   	.i_clk      (i_clk   ),
     .i_rst_n    (i_rst_n ),
     .i_wen      (pre_sh ),
-    .i_din      ({i_lsu_exres, i_lsu_lsres, i_lsu_rdid, i_lsu_rdwen, i_lsu_lden, s_lsu_diffpc, s_lsu_ins} ),
-    .o_dout     ({lsu_exres_r, lsu_lsres_r, lsu_rdid_r, lsu_rdwen_r, lsu_lden_r, lsu_diffpc_r, lsu_ins_r} )
+    .i_din      ({i_lsu_exres, i_lsu_lsres, i_lsu_rdid, i_lsu_rdwen, i_lsu_lden, s_lsu_diffpc, s_lsu_ins, s_lsu_device} ),
+    .o_dout     ({lsu_exres_r, lsu_lsres_r, lsu_rdid_r, lsu_rdwen_r, lsu_lden_r, lsu_diffpc_r, lsu_ins_r, lsu_device_r} )
   );
 
   // 2. generate valid signals for post stage://////////////////////////////////////////////////////////////////
@@ -74,5 +77,6 @@ module wbu (
   assign o_wbu_rdid   = lsu_rdid_r  ;
   assign s_wbu_diffpc = lsu_diffpc_r;
   assign s_wbu_ins    = lsu_ins_r   ;
+  assign s_wbu_device = lsu_device_r;
 
 endmodule

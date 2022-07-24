@@ -21,6 +21,7 @@ module core_top(
   logic                   s_a0zero ;
   logic [`CPU_WIDTH-1:0]  s_idu_diffpc, s_exu_diffpc, s_lsu_diffpc, s_wbu_diffpc;
   logic [`INS_WIDTH-1:0]  s_idu_ins   , s_exu_ins   , s_lsu_ins   , s_wbu_ins   ;
+  logic                   s_lsu_device, s_wbu_device;
 
   // 2.1 ifu ////////////////////////////////////////////////////////
   logic [`CPU_WIDTH-1:0]  ifu_pc ;
@@ -170,7 +171,8 @@ module core_top(
     .o_lsu_rdid    (lsu_rdid      ),
     .o_lsu_rdwen   (lsu_rdwen     ),
     .s_lsu_diffpc  (s_lsu_diffpc  ),
-    .s_lsu_ins     (s_lsu_ins     )
+    .s_lsu_ins     (s_lsu_ins     ),
+    .s_lsu_device  (s_lsu_device  )
   );
 
   // 2.5 wbu ///////////////////////////////////////////////
@@ -191,11 +193,13 @@ module core_top(
     .i_lsu_lden   (lsu_lden     ),
     .s_lsu_diffpc (s_lsu_diffpc ),
     .s_lsu_ins    (s_lsu_ins    ),
+    .s_lsu_device (s_lsu_device ),
     .o_wbu_rdwen  (wbu_rdwen    ),
     .o_wbu_rd     (wbu_rd       ),
     .o_wbu_rdid   (wbu_rdid     ),
     .s_wbu_diffpc (s_wbu_diffpc ),
-    .s_wbu_ins    (s_wbu_ins    )
+    .s_wbu_ins    (s_wbu_ins    ),
+    .s_wbu_device (s_wbu_device )
   );
 
   // 2.6 bypass, regfile read/write. ///////////////////////
@@ -251,24 +255,23 @@ module core_top(
   );
 
   // 3.sim:  ////////////////////////////////////////////////////////
-  // 3.1 update rst state and wb stage pc to sim.
+  // 3.1 update rst state, wb stage pc, wr/rd device to sim.
   import "DPI-C" function void check_rst(input bit rst_flag);
   import "DPI-C" function void diff_read_pc(input longint rtl_pc);
+  import "DPI-C" function void diff_skip_device(input bit s_wbu_device);
   always @(*) begin
     check_rst(i_rst_n);
     diff_read_pc(s_wbu_diffpc);
+    diff_skip_device(s_wbu_device);
   end
+
 
   // 3.2 update wb stage finish.
-  import "DPI-C" function bit check_finsih(input int ins);
-
+  import "DPI-C" function void check_finsih(input int ins,input bit a0zero);
   always@(*)begin
-    if(check_finsih(s_wbu_ins[`INS_WIDTH-1:0]))begin  //ins == ebreak.
-      $display("\n----------EBREAK: HIT !!%s!! TRAP!!---------------\n",s_a0zero? "GOOD":"BAD");
-      $finish;
-    end
+    check_finsih(s_wbu_ins[`INS_WIDTH-1:0],s_a0zero);
   end
-  
+
   // 3.3 check id error.
   always@(*)begin
     if(i_rst_n & (idu_pc >= 64'h80000000) & s_id_err[0]) $display("\n----------ins opcode error, pc = %x, ins = %x, opcode == %b---------------\n",idu_pc,s_idu_ins,s_idu_ins[ 6: 0] );

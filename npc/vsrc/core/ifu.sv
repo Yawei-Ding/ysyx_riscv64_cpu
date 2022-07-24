@@ -78,7 +78,7 @@ module ifu (
     .i_din      (!post_sh & UniIf_Sh),                    //     wait_post_ready <= 1'b0;
     .o_dout     (wait_post_ready    )                     //   end
   );                                                      // end
-  
+
   // 4. use pre stage signals to generate comb logic for post stage://////////////////////////////////////////
 
   assign o_post_valid = UniIf_Sh | wait_post_ready;
