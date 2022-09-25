@@ -38,7 +38,7 @@ static struct rule {
   {"\\)", TK_R_PAR},      // right parentheses
   {"-",TK_NEG_OR_SUB},    //负数 或者 减法,在make token时会分裂
   {"\\*",TK_DERE_OR_MUL}, //指针 或者 乘法,在make token时会分裂
-  {"\\$[\\$rsgtap][0-9apc][0-1]?",TK_REG},
+  {"\\$[\\$rsgtapm][0-9apcset][0-1tpva]?[aceu]?[tcs]?[ue]?[s]?",TK_REG},
   {"/", TK_DIV},          // div
   {"%",TK_REM},
   {"\\+", TK_PLUS},       // plus

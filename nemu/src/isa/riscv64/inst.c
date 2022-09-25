@@ -9,7 +9,7 @@
 
 enum {
   TYPE_R, TYPE_I, TYPE_U, TYPE_S, TYPE_J,TYPE_B,
-  TYPE_N, // none
+  TYPE_N, TYPE_C, TYPE_CI // none
 };
 
 #define src1R(n) do { *src1 = R(n); } while (0)
@@ -40,6 +40,65 @@ static void decode_operand(Decode *s, word_t *dest, word_t *src1, word_t *src2, 
     case TYPE_U:  destR(rd);       src1I(immU(i));                   break;
     case TYPE_J:  destR(rd);       src1I(immJ(i));                   break;
     case TYPE_B:  destI(immB(i));  src1R(rs1);       src2R(rs2);     break;
+  }
+}
+
+static void csr_rw(uint32_t insval,int type){
+
+  int rdid   = BITS(insval, 11, 7);
+  int rs1id  = BITS(insval, 19, 15);
+  int csrid  = BITS(insval, 31, 20);
+  word_t imm    = BITS(insval, 19, 15);
+
+  // read:
+  if(rdid != 0){
+    R(rdid) = csr(csrid);
+  }
+  // write:
+  switch (type)
+  {
+    case TYPE_C : csr(csrid) = R(rs1id); break;
+    case TYPE_CI: csr(csrid) = imm     ; break;
+  }
+}
+
+static void csr_rs(uint32_t insval,int type){
+
+  int rdid   = BITS(insval, 11, 7);
+  int rs1id  = BITS(insval, 19, 15);
+  int csrid  = BITS(insval, 31, 20);
+  word_t imm = BITS(insval, 19, 15);
+  word_t high63_5,low4_0;
+
+  //read:
+  R(rdid) = csr(csrid);
+  //write:
+  if(rs1id != 0){
+    switch (type)
+    {
+      case TYPE_C : csr(csrid) = R(rs1id) | csr(csrid); break;
+      case TYPE_CI: high63_5 = ((csr(csrid)>>5)<<5); low4_0 = csr(csrid) - high63_5; csr(csrid) = high63_5 | (low4_0 | imm); break;
+    }
+  }
+}
+
+static void csr_rc(uint32_t insval,int type){
+
+  int rdid   = BITS(insval, 11, 7);
+  int rs1id  = BITS(insval, 19, 15);
+  int csrid  = BITS(insval, 31, 20);
+  word_t imm = BITS(insval, 19, 15);
+  word_t  high63_5,low4_0;
+
+  //read:
+  R(rdid) = csr(csrid);
+  //write:
+  if(rs1id != 0){
+    switch (type)
+    {
+      case TYPE_C : csr(csrid) = R(rs1id) & csr(csrid); break;
+      case TYPE_CI: high63_5 = ((csr(csrid)>>5)<<5); low4_0 = csr(csrid) - high63_5; csr(csrid) = high63_5 | (low4_0 & imm); break;
+    }
   }
 }
 
@@ -135,8 +194,18 @@ static int decode_exec(Decode *s) {
   INSTPAT("0000001 ????? ????? 110 ????? 01110 11", remw   , R, R(dest) = SEXT((int32_t )src1 % (int32_t )src2,32));
   INSTPAT("0000001 ????? ????? 111 ????? 01110 11", remuw  , R, R(dest) = SEXT((uint32_t)src1 % (uint32_t)src2,32));
 
-  // trap and end:
+  // rv64 Zicsr Standard Extension
+  INSTPAT("??????? ????? ????? 001 ????? 11100 11", csrrw  , C, csr_rw(s->isa.inst.val,TYPE_C ));
+  INSTPAT("??????? ????? ????? 010 ????? 11100 11", csrrs  , C, csr_rs(s->isa.inst.val,TYPE_C ));
+  INSTPAT("??????? ????? ????? 011 ????? 11100 11", csrrc  , C, csr_rc(s->isa.inst.val,TYPE_C ));
+  INSTPAT("??????? ????? ????? 101 ????? 11100 11", csrrwi , CI,csr_rw(s->isa.inst.val,TYPE_CI));
+  INSTPAT("??????? ????? ????? 110 ????? 11100 11", csrrsi , CI,csr_rs(s->isa.inst.val,TYPE_CI));
+  INSTPAT("??????? ????? ????? 111 ????? 11100 11", csrrci , CI,csr_rc(s->isa.inst.val,TYPE_CI));
+  
+  // trap and exception:
+  INSTPAT("0000000 00000 00000 000 00000 11100 11", ecall  , N, s->dnpc = isa_raise_intr(R(17),s->pc)); // R(17) is $a7
   INSTPAT("0000000 00001 00000 000 00000 11100 11", ebreak , N, NEMUTRAP(s->pc, R(10))); // R(10) is $a0
+  INSTPAT("0011000 00010 00000 000 00000 11100 11", mret   , N, s->dnpc = csr(mepc));
   INSTPAT("??????? ????? ????? ??? ????? ????? ??", inv    , N, INV(s->pc));
   INSTPAT_END();
 

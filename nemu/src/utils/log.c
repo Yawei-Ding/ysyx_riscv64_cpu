@@ -56,6 +56,7 @@ void add_iringbuf(char *newlog){
 
 void print_iringbuf(){
   //第一个for循环打印 [index , MAX_BUF]
+  printf("This is the last MAX_BUF ins in iringbuf:\n");
   for(int i=bufindex; i<MAX_BUF; i++){
     if(iringbuf[i].used == true){ 
       printf("%s\n", iringbuf[i].logbuf);
