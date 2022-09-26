@@ -285,7 +285,7 @@ module core_top(
     .i_iru_intr    (iru_intr     ),
     .i_lsu_nop     (lsu_nop      ),
     .s_lsu_lsclint (s_lsu_lsclint),
-    .s_lsu_uart    (s_wbu_uart   ),
+    .s_lsu_uart    (s_lsu_uart   ),
     .o_wbu_rdid    (wbu_rdid     ),
     .o_wbu_rdwen   (wbu_rdwen    ),
     .o_wbu_rd      (wbu_rd       ),

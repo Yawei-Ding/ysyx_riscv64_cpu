@@ -87,8 +87,16 @@ module uni2axi # (
   // ------------------Process Data------------------
   parameter TRANS_LEN = UNI_DATA_WIDTH / AXI_DATA_WIDTH;  // 2
 
-  wire        is_uart = (UniIf_S.addr & {{(`ADR_WIDTH-12){1'b1}},12'b0}) == `UART_BASE_ADDR;
-  wire [1:0]  offset  = UniIf_S.addr[1:0];
+  // for SoC:
+  // wire                      is_uart  = (UniIf_S.addr & {{(`ADR_WIDTH-12){1'b1}},12'b0}) == `UART_BASE_ADDR;
+  // wire [1:0]                offset   = UniIf_S.addr[1:0];
+  // wire [AXI_ADDR_WIDTH-1:0] axi_addr = {{(AXI_ADDR_WIDTH-UNI_ADDR_WIDTH){1'b0}},UniIf_S.addr[UNI_ADDR_WIDTH-1:2], is_uart ? UniIf_S.addr[1:0]: 2'b00}; // for SoC
+  // wire [2:0]                axi_size = {1'b0,UniIf_S.size};;
+
+  // for SoC simulator: 
+  wire [2:0]                offset   = UniIf_S.addr[2:0];
+  wire [AXI_ADDR_WIDTH-1:0] axi_addr = {{(AXI_ADDR_WIDTH-UNI_ADDR_WIDTH){1'b0}},UniIf_S.addr[UNI_ADDR_WIDTH-1:3], 3'b00};
+  wire [2:0]                axi_size = 3'b011;
 
   wire        size_b  = (UniIf_S.size == 2'b00);
   wire        size_h  = (UniIf_S.size == 2'b01);
@@ -99,8 +107,6 @@ module uni2axi # (
                                       | ({AXI_STRB_WIDTH{size_w}} & {8'b0000_1111})) << offset;
 
   assign                    axi_len  = UniIf_S.cachable ? (TRANS_LEN - 1) : 0;
-  wire [2:0]                axi_size = {1'b0,UniIf_S.size};
-  wire [AXI_ADDR_WIDTH-1:0] axi_addr = {{(AXI_ADDR_WIDTH-UNI_ADDR_WIDTH){1'b0}},UniIf_S.addr[UNI_ADDR_WIDTH-1:2], is_uart ? UniIf_S.addr[1:0]: 2'b00};
 
   wire [AXI_ID_WIDTH-1:0]   axi_id   = {AXI_ID_WIDTH{1'b0}};
   wire [AXI_USER_WIDTH-1:0] axi_user = {AXI_USER_WIDTH{1'b0}};
