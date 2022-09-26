@@ -40,7 +40,8 @@ module mult #(
   wallace_tree_33 #(2*TOTAL_W) wallace_tree (.in(tree_in),.out(tree_out));
 
   // 3. full connect adder://///////////////////////////////////////////////////////////////////
-  rca_nbit #(.N (2*TOTAL_W)) u_rca_nbit(.i_a (tree_out[1]),.i_b (tree_out[0]), .i_c (0),.o_s (res));
+  logic carry;
+  rca_nbit #(.N (2*TOTAL_W)) u_rca_nbit(.i_a (tree_out[1]),.i_b (tree_out[0]), .i_c (1'b0),.o_s (res), .o_c(carry));
   assign {o_hi_res, o_lw_res} = res[2*W-1:0];
 
 endmodule

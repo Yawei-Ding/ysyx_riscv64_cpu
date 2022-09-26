@@ -5,7 +5,7 @@ char *img_file = NULL;
 static char *diff_so_file = NULL;
 static int parse_args(int argc, char *argv[]);
 
-void npc_init(int argc, char *argv[],axi4_mem <64,64,4> *mem) {
+void npc_init(int argc, char *argv[],axi4_mem <32,64,4> *mem) {
   // Parse arguments.
   parse_args(argc, argv);
 

@@ -12,8 +12,8 @@
 #include "axi_mem/mmio_mem.hpp"
 #include "axi_mem/uartlite.hpp"
 
-//#define DIFFTEST_ON  1
-//#define DUMPWAVE_ON  1
+#define DIFFTEST_ON  1
+#define DUMPWAVE_ON  1
 
 #define INST_START    0x80000000 // use for difftest reg copy.
 #define PMEM_START    0x80000000 // use for difftest mem copy.
@@ -27,7 +27,7 @@ typedef struct {
   uint64_t pc;
 } regfile;
 
-void npc_init(int argc, char *argv[],axi4_mem <64,64,4> *mem);
+void npc_init(int argc, char *argv[],axi4_mem <32,64,4> *mem);
 void print_regs();
 bool checkregs(regfile *ref, regfile *dut);
 regfile pack_dut_regfile(uint64_t *dut_reg,uint64_t pc);

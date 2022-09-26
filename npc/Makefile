@@ -2,7 +2,7 @@
 CSRC +=  $(shell find $(abspath ./csrc) -name "*.cpp")
 VSRC +=  $(shell find $(abspath ./vsrc) -name "*.v" -or -name "*.sv")
 TOP_MODULE := top
-SEARCHPATH := ./vsrc/core/other
+SEARCHPATH := ./vsrc
 
 # 2.verilator flags:
 VERILATOR_FLAGS += -I${SEARCHPATH}
@@ -10,8 +10,6 @@ VERILATOR_FLAGS += --top ${TOP_MODULE}
 VERILATOR_FLAGS += --trace --cc --exe --build --threads 2 -j 8
 VERILATOR_FLAGS += -Wno-fatal		# only print lint warning, but not terminate compile.
 VERILATOR_FLAGS += -Wno-UNUSED 		# close <unused> warning.
-VERILATOR_FLAGS += -Wno-PINMISSING	# close <pin missing> warning.
-VERILATOR_FLAGS += -Wno-UNOPTFLAT 	# close <feedback to clock or circular logic> warning, use for rca_nbit(mul66)
 GCC_LDFLAGS := -CFLAGS -g -LDFLAGS -ldl								# -g for gdb, -ldl for dynamic link(nemu difftest).
 
 # 3.run info: 

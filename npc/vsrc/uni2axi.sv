@@ -1,47 +1,8 @@
-
-// AXI interface signals define://////////////////////////////////////////////////////////////
-// Burst types
-`define AXI_BURST_TYPE_FIXED                                2'b00
-`define AXI_BURST_TYPE_INCR                                 2'b01
-`define AXI_BURST_TYPE_WRAP                                 2'b10
-// Access permissions
-`define AXI_PROT_UNPRIVILEGED_ACCESS                        3'b000
-`define AXI_PROT_PRIVILEGED_ACCESS                          3'b001
-`define AXI_PROT_SECURE_ACCESS                              3'b000
-`define AXI_PROT_NON_SECURE_ACCESS                          3'b010
-`define AXI_PROT_DATA_ACCESS                                3'b000
-`define AXI_PROT_INSTRUCTION_ACCESS                         3'b100
-// Memory types (AR)
-`define AXI_ARCACHE_DEVICE_NON_BUFFERABLE                   4'b0000
-`define AXI_ARCACHE_DEVICE_BUFFERABLE                       4'b0001
-`define AXI_ARCACHE_NORMAL_NON_CACHEABLE_NON_BUFFERABLE     4'b0010
-`define AXI_ARCACHE_NORMAL_NON_CACHEABLE_BUFFERABLE         4'b0011
-`define AXI_ARCACHE_WRITE_THROUGH_NO_ALLOCATE               4'b1010
-`define AXI_ARCACHE_WRITE_THROUGH_READ_ALLOCATE             4'b1110
-`define AXI_ARCACHE_WRITE_THROUGH_WRITE_ALLOCATE            4'b1010
-`define AXI_ARCACHE_WRITE_THROUGH_READ_AND_WRITE_ALLOCATE   4'b1110
-`define AXI_ARCACHE_WRITE_BACK_NO_ALLOCATE                  4'b1011
-`define AXI_ARCACHE_WRITE_BACK_READ_ALLOCATE                4'b1111
-`define AXI_ARCACHE_WRITE_BACK_WRITE_ALLOCATE               4'b1011
-`define AXI_ARCACHE_WRITE_BACK_READ_AND_WRITE_ALLOCATE      4'b1111
-// Memory types (AW)
-`define AXI_AWCACHE_DEVICE_NON_BUFFERABLE                   4'b0000
-`define AXI_AWCACHE_DEVICE_BUFFERABLE                       4'b0001
-`define AXI_AWCACHE_NORMAL_NON_CACHEABLE_NON_BUFFERABLE     4'b0010
-`define AXI_AWCACHE_NORMAL_NON_CACHEABLE_BUFFERABLE         4'b0011
-`define AXI_AWCACHE_WRITE_THROUGH_NO_ALLOCATE               4'b0110
-`define AXI_AWCACHE_WRITE_THROUGH_READ_ALLOCATE             4'b0110
-`define AXI_AWCACHE_WRITE_THROUGH_WRITE_ALLOCATE            4'b1110
-`define AXI_AWCACHE_WRITE_THROUGH_READ_AND_WRITE_ALLOCATE   4'b1110
-`define AXI_AWCACHE_WRITE_BACK_NO_ALLOCATE                  4'b0111
-`define AXI_AWCACHE_WRITE_BACK_READ_ALLOCATE                4'b0111
-`define AXI_AWCACHE_WRITE_BACK_WRITE_ALLOCATE               4'b1111
-`define AXI_AWCACHE_WRITE_BACK_READ_AND_WRITE_ALLOCATE      4'b1111
-
+`include "defines.sv"
 module uni2axi # (
     parameter UNI_ADDR_WIDTH    = 32,                   // addr width for uni if
-    parameter UNI_DATA_WIDTH    = 64,                   // data width for uni if
-    parameter AXI_ADDR_WIDTH    = 64,                   // addr width for axi if
+    parameter UNI_DATA_WIDTH    = 128,                  // data width for uni if
+    parameter AXI_ADDR_WIDTH    = 32,                   // addr width for axi if
     parameter AXI_DATA_WIDTH    = 64,                   // data width for axi if
     parameter AXI_STRB_WIDTH    = AXI_DATA_WIDTH/8,     // strb width for axi if
     parameter AXI_ID_WIDTH      = 4,
@@ -53,8 +14,8 @@ module uni2axi # (
   axi4_if.Master                      AxiIf_M
 );
 
-  wire w_trans    = UniIf_S.reqtyp == 1'b1;
-  wire r_trans    = UniIf_S.reqtyp == 1'b0;
+  wire w_trans    = UniIf_S.reqtyp == `REQ_WRITE;
+  wire r_trans    = UniIf_S.reqtyp == `REQ_READ ;
   wire w_valid    = UniIf_S.valid & w_trans;
   wire r_valid    = UniIf_S.valid & r_trans;
 
@@ -112,7 +73,7 @@ module uni2axi # (
   end
 
   // ------------------Number of transmission------------------
-  reg [7:0] len;
+  logic [7:0] len, axi_len;
   always @(posedge i_clk) begin
       if (!i_rst_n) begin
           len <= 0;
@@ -124,42 +85,25 @@ module uni2axi # (
   end
 
   // ------------------Process Data------------------
-  parameter ALIGNED_WIDTH = $clog2(AXI_STRB_WIDTH);           // 3
-  parameter OFFSET_WIDTH  = $clog2(AXI_DATA_WIDTH);           // 6
-  parameter AXI_SIZE      = $clog2(AXI_STRB_WIDTH);           // 3
-  parameter MASK_WIDTH    = AXI_DATA_WIDTH * 2;               // 128
-  parameter TRANS_LEN     = UNI_DATA_WIDTH / AXI_DATA_WIDTH;  // 1
-  parameter BLOCK_TRANS   = TRANS_LEN > 1 ? 1'b1 : 1'b0;      // 0
+  parameter TRANS_LEN = UNI_DATA_WIDTH / AXI_DATA_WIDTH;  // 2
 
-  wire aligned            = BLOCK_TRANS | (UniIf_S.addr[ALIGNED_WIDTH-1:0] == 0);
-  wire size_b             = (UniIf_S.size == 2'b00);
-  wire size_h             = (UniIf_S.size == 2'b01);
-  wire size_w             = (UniIf_S.size == 2'b10);
-  wire size_d             = (UniIf_S.size == 2'b11);
-  wire [3:0] addr_op1     = {{(4-ALIGNED_WIDTH){1'b0}}, UniIf_S.addr[ALIGNED_WIDTH-1:0]};
-  wire [3:0] addr_op2     = ({4{size_b}} & {4'b0000})     // byte
-                          | ({4{size_h}} & {4'b0001})     // half byte
-                          | ({4{size_w}} & {4'b0011})     // word
-                          | ({4{size_d}} & {4'b0111});    // double word
-  wire [3:0] addr_end     = addr_op1 + addr_op2;
-  wire overstep           = addr_end[3:ALIGNED_WIDTH] != 0;
+  wire        is_uart = (UniIf_S.addr & {{(`ADR_WIDTH-12){1'b1}},12'b0}) == `UART_BASE_ADDR;
+  wire [1:0]  offset  = UniIf_S.addr[1:0];
 
-  wire [7:0] axi_len      = aligned ? TRANS_LEN - 1 : {{7{1'b0}}, overstep};
-  wire [2:0] axi_size     = AXI_SIZE[2:0];
+  wire        size_b  = (UniIf_S.size == 2'b00);
+  wire        size_h  = (UniIf_S.size == 2'b01);
+  wire        size_w  = (UniIf_S.size == 2'b10);
 
-  wire [AXI_ADDR_WIDTH-1:0] axi_addr       = {UniIf_S.addr[AXI_ADDR_WIDTH-1:ALIGNED_WIDTH], {ALIGNED_WIDTH{1'b0}}};
-  wire [OFFSET_WIDTH-1:0] aligned_offset_l = {{(OFFSET_WIDTH-ALIGNED_WIDTH){1'b0}}, {UniIf_S.addr[ALIGNED_WIDTH-1:0]}} << 3; // <<3 == *8
-  wire [OFFSET_WIDTH-1:0] aligned_offset_h = AXI_DATA_WIDTH - aligned_offset_l;
-  wire [MASK_WIDTH-1:0] mask               = (({MASK_WIDTH{size_b}} & {{(MASK_WIDTH-8 ){1'b0}}, 8'hff})
-                                            | ({MASK_WIDTH{size_h}} & {{(MASK_WIDTH-16){1'b0}}, 16'hffff})
-                                            | ({MASK_WIDTH{size_w}} & {{(MASK_WIDTH-32){1'b0}}, 32'hffffffff})
-                                            | ({MASK_WIDTH{size_d}} & {{(MASK_WIDTH-64){1'b0}}, 64'hffffffff_ffffffff})
-                                            ) << aligned_offset_l;
-  wire [AXI_DATA_WIDTH-1:0] mask_l         = mask[AXI_DATA_WIDTH-1:0];
-  wire [AXI_DATA_WIDTH-1:0] mask_h         = mask[MASK_WIDTH-1:AXI_DATA_WIDTH];
+  wire [AXI_STRB_WIDTH-1:0] dev_strb = (({AXI_STRB_WIDTH{size_b}} & {8'b0000_0001})
+                                      | ({AXI_STRB_WIDTH{size_h}} & {8'b0000_0011})
+                                      | ({AXI_STRB_WIDTH{size_w}} & {8'b0000_1111})) << offset;
 
-  wire [AXI_ID_WIDTH-1:0]   axi_id         = {AXI_ID_WIDTH{1'b0}};
-  wire [AXI_USER_WIDTH-1:0] axi_user       = {AXI_USER_WIDTH{1'b0}};
+  assign                    axi_len  = UniIf_S.cachable ? (TRANS_LEN - 1) : 0;
+  wire [2:0]                axi_size = {1'b0,UniIf_S.size};
+  wire [AXI_ADDR_WIDTH-1:0] axi_addr = {{(AXI_ADDR_WIDTH-UNI_ADDR_WIDTH){1'b0}},UniIf_S.addr[UNI_ADDR_WIDTH-1:2], is_uart ? UniIf_S.addr[1:0]: 2'b00};
+
+  wire [AXI_ID_WIDTH-1:0]   axi_id   = {AXI_ID_WIDTH{1'b0}};
+  wire [AXI_USER_WIDTH-1:0] axi_user = {AXI_USER_WIDTH{1'b0}};
 
   always @(posedge i_clk) begin
       if (!i_rst_n) begin
@@ -167,15 +111,6 @@ module uni2axi # (
       end
       else if (trans_done | UniIf_S.ready) begin
           UniIf_S.ready <= trans_done;
-      end
-  end
-
-  always @(posedge i_clk) begin
-      if (!i_rst_n) begin
-          UniIf_S.resp <= 0;
-      end
-      else if (trans_done) begin
-          UniIf_S.resp <= w_trans ? AxiIf_M.b_resp : AxiIf_M.r_resp;
       end
   end
 
@@ -202,19 +137,8 @@ module uni2axi # (
   assign AxiIf_M.w_valid    = w_state_write;
   assign AxiIf_M.w_last     = w_hs & (len == axi_len);
   assign AxiIf_M.w_user     = axi_user;                                                                         // no use.
-  wire [AXI_DATA_WIDTH-1:0] axi_w_data_l = (UniIf_S.wdata << aligned_offset_l) & mask_l;
-  wire [AXI_DATA_WIDTH-1:0] axi_w_data_h = (UniIf_S.wdata >> aligned_offset_h) & mask_h;
-  wire [AXI_STRB_WIDTH-1:0] axi_w_strb_l;
-  wire [AXI_STRB_WIDTH-1:0] axi_w_strb_h;
-
-  for(genvar i=0; i<AXI_STRB_WIDTH ; i=i+1)begin
-      assign axi_w_strb_l[i] = mask_l[8*i];
-      assign axi_w_strb_h[i] = mask_h[8*i];
-  end
-
-  // write only support uni_data_w == axi_data_w!
-  assign AxiIf_M.w_data = AxiIf_M.w_valid ? ( (~aligned & overstep & len[0]) ? axi_w_data_h : axi_w_data_l): {AXI_DATA_WIDTH{1'b0}};
-  assign AxiIf_M.w_strb = AxiIf_M.w_valid ? ( (~aligned & overstep & len[0]) ? axi_w_strb_h : axi_w_strb_l): {AXI_STRB_WIDTH{1'b0}};
+  assign AxiIf_M.w_strb     = UniIf_S.cachable ? {AXI_STRB_WIDTH{1'b1}} : dev_strb;
+  assign AxiIf_M.w_data     = UniIf_S.wdata[len*AXI_DATA_WIDTH+:AXI_DATA_WIDTH] << {offset,3'b0};
 
   // ------------------Read Transaction------------------
 
@@ -234,30 +158,14 @@ module uni2axi # (
   // Read data channel signals
   assign AxiIf_M.r_ready    = r_state_read;
 
-  wire [AXI_DATA_WIDTH-1:0] axi_r_data_l  = (AxiIf_M.r_data & mask_l) >> aligned_offset_l;
-  wire [AXI_DATA_WIDTH-1:0] axi_r_data_h  = (AxiIf_M.r_data & mask_h) << aligned_offset_h;
-
-  generate
-      for (genvar i = 0; i < TRANS_LEN; i = i+1) begin
-          always @(posedge i_clk) begin
-              if (!i_rst_n) begin
-                  UniIf_S.rdata[i*AXI_DATA_WIDTH+:AXI_DATA_WIDTH] <= 0;
-              end
-              else if (AxiIf_M.r_valid  & AxiIf_M.r_ready) begin
-                  if (~aligned & overstep) begin
-                      if (len[0]) begin   // second read.
-                          UniIf_S.rdata[AXI_DATA_WIDTH-1:0] <= UniIf_S.rdata[AXI_DATA_WIDTH-1:0] | axi_r_data_h;
-                      end
-                      else begin          // first read.
-                          UniIf_S.rdata[AXI_DATA_WIDTH-1:0] <= axi_r_data_l;
-                      end
-                  end
-                  else if (len == i) begin
-                      UniIf_S.rdata[i*AXI_DATA_WIDTH+:AXI_DATA_WIDTH] <= axi_r_data_l;
-                  end
-              end
-          end
+  for(genvar i=0; i<TRANS_LEN; i=i+1)begin
+    always @(posedge i_clk) begin
+      if (!i_rst_n) begin
+        UniIf_S.rdata[i*AXI_DATA_WIDTH+:AXI_DATA_WIDTH] <= 0;
+      end else if (AxiIf_M.r_valid & AxiIf_M.r_ready & (i==len)) begin
+        UniIf_S.rdata[i*AXI_DATA_WIDTH+:AXI_DATA_WIDTH] <= (AxiIf_M.r_data >> {offset,3'b0});
       end
-  endgenerate
+    end
+  end
 
 endmodule

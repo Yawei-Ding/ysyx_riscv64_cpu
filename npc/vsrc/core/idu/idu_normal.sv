@@ -1,24 +1,27 @@
-`include "config.sv"
-module idu_logic(
+`include "defines.sv"
+module idu_normal(
   input        [`INS_WIDTH-1:0]     i_ins         ,
-  output logic [`REG_ADDRW-1:0]     o_rs1id       , //for reg.
-  output logic [`REG_ADDRW-1:0]     o_rs2id       , //for reg.
-  output logic [`REG_ADDRW-1:0]     o_rdid        , //for reg.
-  output logic                      o_rdwen       , //for reg.
-  output logic [`CPU_WIDTH-1:0]     o_imm         , //for exu.
-  output logic [`EXU_SEL_WIDTH-1:0] o_src_sel     , //for exu.
-  output logic [`EXU_OPT_WIDTH-1:0] o_exopt       , //for exu.
+  // 1. for reg:
+  output logic [`REG_ADDRW-1:0]     o_rs1id       ,
+  output logic [`REG_ADDRW-1:0]     o_rs2id       ,
+  // 2. for exu:
+  output logic [`CPU_WIDTH-1:0]     o_imm         ,
+  output logic [`EXU_SEL_WIDTH-1:0] o_src_sel     ,
+  output logic [`EXU_OPT_WIDTH-1:0] o_exopt       ,
+  // 3. for lsu:
   output logic [2:0]                o_lsu_func3   , //for lsu.
   output logic                      o_lsu_lden    , //for lsu.
   output logic                      o_lsu_sten    , //for lsu.  
-  output logic                      o_jal         , //for pcu.
-  output logic                      o_jalr        , //for pcu.
-  output logic                      o_brch        , //for pcu.
-  output logic [2:0]                o_bfun3       , //for pcu.
-  output logic [2:0]                s_id_err        //for sim. bit0:opc_err, bit1:func3_err, bit2:func7_err
+  // 4. for wbu:
+  output logic [`REG_ADDRW-1:0]     o_rdid        , //for wbu.
+  output logic                      o_rdwen       , //for wbu.
+  // 5. for bru:
+  output logic                      o_jal         , //for bru.
+  output logic                      o_jalr        , //for bru.
+  output logic                      o_brch        , //for bru.
+  output logic [2:0]                o_bfun3         //for bru.
 );
 
-  // ebreak & ecall are not supperted now. ebreak will cause system finish.
   wire [6:0] func7  = i_ins[31:25];
   wire [4:0] rs2id  = i_ins[24:20];
   wire [4:0] rs1id  = i_ins[19:15];
@@ -42,7 +45,6 @@ module idu_logic(
       `TYPE_I_W:      begin                   o_rs1id = rs1id;  o_rdid = rdid;  o_rdwen = 1'b1; o_imm = {{52{i_ins[31]}},i_ins[31:20]};                             end
       `TYPE_I_LOAD:   begin                   o_rs1id = rs1id;  o_rdid = rdid;  o_rdwen = 1'b1; o_imm = {{52{i_ins[31]}},i_ins[31:20]};                             end
       `TYPE_I_JALR:   begin                   o_rs1id = rs1id;  o_rdid = rdid;  o_rdwen = 1'b1; o_imm = {{52{i_ins[31]}},i_ins[31:20]};                             end
-      `TYPE_I_EBRK:   begin                   o_rs1id = rs1id;  o_rdid = rdid;                  o_imm = {{52{i_ins[31]}},i_ins[31:20]};                             end
       `TYPE_U_LUI:    begin                   o_rs1id = 0  ;    o_rdid = rdid;  o_rdwen = 1'b1; o_imm = {{32{i_ins[31]}},i_ins[31:12],12'b0};                       end //LUI: rdid = x0 + imm;
       `TYPE_U_AUIPC:  begin                                     o_rdid = rdid;  o_rdwen = 1'b1; o_imm = {{32{i_ins[31]}},i_ins[31:12],12'b0};                       end
       `TYPE_J:        begin                                     o_rdid = rdid;  o_rdwen = 1'b1; o_imm = {{44{i_ins[31]}},i_ins[19:12],i_ins[20],i_ins[30:21],1'b0}; end
@@ -53,12 +55,10 @@ module idu_logic(
 
   //2.exu info:  /////////////////////////////////////////////////////////////////////////////////////
   always @(*) begin
-    o_exopt     = `EXU_ADD;
+    o_exopt   = `EXU_NOP;
     o_src_sel = `EXU_SEL_IMM;
-    s_id_err        = 3'b0;
     case (opcode)
       `TYPE_S:        begin o_exopt = `EXU_ADD;  o_src_sel = `EXU_SEL_IMM; end // M[rs1+imm] = rs2
-      `TYPE_I_EBRK:   begin                                                end // no use, dirct break.
       `TYPE_I_LOAD:   begin o_exopt = `EXU_ADD;  o_src_sel = `EXU_SEL_IMM; end // rdid = M[rs1+imm]
       `TYPE_I_JALR:   begin o_exopt = `EXU_ADD;  o_src_sel = `EXU_SEL_PC4; end // rdid = PC+4
       `TYPE_J:        begin o_exopt = `EXU_ADD;  o_src_sel = `EXU_SEL_PC4; end // rdid = PC+4
@@ -71,13 +71,13 @@ module idu_logic(
           case (func3)
             `FUNC3_ADD_SUB_MUL:   o_exopt = `EXU_ADD; 
             `FUNC3_SLL_MULH:      o_exopt = `EXU_SLL;
-            `FUNC3_SRL_SRA_DIVU:  case (func7[6:1]) 6'b000000: o_exopt = `EXU_SRL; 6'b010000:o_exopt = `EXU_SRA; default:s_id_err[2] = 1'b1; endcase
+            `FUNC3_SRL_SRA_DIVU:  case (func7[6:1]) 6'b000000: o_exopt = `EXU_SRL; 6'b010000:o_exopt = `EXU_SRA; default: ; endcase
             `FUNC3_XOR_DIV:       o_exopt = `EXU_XOR;
             `FUNC3_OR_REM:        o_exopt = `EXU_OR ;
             `FUNC3_AND_REMU:      o_exopt = `EXU_AND;
             `FUNC3_SLT_MULHSU:    o_exopt = `EXU_SLT;
             `FUNC3_SLTU_MULHU:    o_exopt = `EXU_SLTU;
-            default:              s_id_err[1] = 1'b1; //func3_err
+            default:              ;
           endcase
         end
       `TYPE_I_W:
@@ -86,39 +86,39 @@ module idu_logic(
           case (func3)
             `FUNC3_ADD_SUB_MUL:   o_exopt = `EXU_ADDW;
             `FUNC3_SLL_MULH:      o_exopt = `EXU_SLLW;
-            `FUNC3_SRL_SRA_DIVU:  case (func7) 7'b0000000:o_exopt = `EXU_SRLW; 7'b0100000: o_exopt = `EXU_SRAW;  default:s_id_err[2] = 1'b1; endcase
-            default:              s_id_err[1] = 1'b1; //func3_err
+            `FUNC3_SRL_SRA_DIVU:  case (func7) 7'b0000000:o_exopt = `EXU_SRLW; 7'b0100000: o_exopt = `EXU_SRAW;  default: ; endcase
+            default:              ;
           endcase
         end
       `TYPE_R:
         begin
           o_src_sel = `EXU_SEL_REG;
           case (func3)
-            `FUNC3_ADD_SUB_MUL:  case (func7) 7'b0000000:o_exopt = `EXU_ADD ; 7'b0000001: o_exopt = `EXU_MUL   ; 7'b0100000: o_exopt = `EXU_SUB; default:s_id_err[2] = 1'b1; endcase
-            `FUNC3_SRL_SRA_DIVU: case (func7) 7'b0000000:o_exopt = `EXU_SRL ; 7'b0000001: o_exopt = `EXU_DIVU  ; 7'b0100000: o_exopt = `EXU_SRA; default:s_id_err[2] = 1'b1; endcase
-            `FUNC3_SLL_MULH:     case (func7) 7'b0000000:o_exopt = `EXU_SLL ; 7'b0000001: o_exopt = `EXU_MULH  ; default:s_id_err[2] = 1'b1; endcase
-            `FUNC3_XOR_DIV:      case (func7) 7'b0000000:o_exopt = `EXU_XOR ; 7'b0000001: o_exopt = `EXU_DIV   ; default:s_id_err[2] = 1'b1; endcase
-            `FUNC3_OR_REM:       case (func7) 7'b0000000:o_exopt = `EXU_OR  ; 7'b0000001: o_exopt = `EXU_REM   ; default:s_id_err[2] = 1'b1; endcase
-            `FUNC3_AND_REMU:     case (func7) 7'b0000000:o_exopt = `EXU_AND ; 7'b0000001: o_exopt = `EXU_REMU  ; default:s_id_err[2] = 1'b1; endcase
-            `FUNC3_SLT_MULHSU:   case (func7) 7'b0000000:o_exopt = `EXU_SLT ; 7'b0000001: o_exopt = `EXU_MULHSU; default:s_id_err[2] = 1'b1; endcase
-            `FUNC3_SLTU_MULHU:   case (func7) 7'b0000000:o_exopt = `EXU_SLTU; 7'b0000001: o_exopt = `EXU_MULHU ; default:s_id_err[2] = 1'b1; endcase
-            default:              s_id_err[1] = 1'b1; //func3_err
+            `FUNC3_ADD_SUB_MUL:  case (func7) 7'b0000000:o_exopt = `EXU_ADD ; 7'b0000001: o_exopt = `EXU_MUL   ; 7'b0100000: o_exopt = `EXU_SUB; default: ; endcase
+            `FUNC3_SRL_SRA_DIVU: case (func7) 7'b0000000:o_exopt = `EXU_SRL ; 7'b0000001: o_exopt = `EXU_DIVU  ; 7'b0100000: o_exopt = `EXU_SRA; default: ; endcase
+            `FUNC3_SLL_MULH:     case (func7) 7'b0000000:o_exopt = `EXU_SLL ; 7'b0000001: o_exopt = `EXU_MULH  ; default: ; endcase
+            `FUNC3_XOR_DIV:      case (func7) 7'b0000000:o_exopt = `EXU_XOR ; 7'b0000001: o_exopt = `EXU_DIV   ; default: ; endcase
+            `FUNC3_OR_REM:       case (func7) 7'b0000000:o_exopt = `EXU_OR  ; 7'b0000001: o_exopt = `EXU_REM   ; default: ; endcase
+            `FUNC3_AND_REMU:     case (func7) 7'b0000000:o_exopt = `EXU_AND ; 7'b0000001: o_exopt = `EXU_REMU  ; default: ; endcase
+            `FUNC3_SLT_MULHSU:   case (func7) 7'b0000000:o_exopt = `EXU_SLT ; 7'b0000001: o_exopt = `EXU_MULHSU; default: ; endcase
+            `FUNC3_SLTU_MULHU:   case (func7) 7'b0000000:o_exopt = `EXU_SLTU; 7'b0000001: o_exopt = `EXU_MULHU ; default: ; endcase
+            default:             ;
           endcase
         end
       `TYPE_R_W:
         begin
           o_src_sel = `EXU_SEL_REG;
           case (func3)
-            `FUNC3_ADD_SUB_MUL:   case (func7) 7'b0000000:o_exopt = `EXU_ADDW; 7'b0100000: o_exopt = `EXU_SUBW; 7'b0000001: o_exopt = `EXU_MULW ; default:s_id_err[2] = 1'b1; endcase
-            `FUNC3_SRL_SRA_DIVU:  case (func7) 7'b0000000:o_exopt = `EXU_SRLW; 7'b0100000: o_exopt = `EXU_SRAW; 7'b0000001: o_exopt = `EXU_DIVUW; default:s_id_err[2] = 1'b1; endcase
+            `FUNC3_ADD_SUB_MUL:   case (func7) 7'b0000000:o_exopt = `EXU_ADDW; 7'b0100000: o_exopt = `EXU_SUBW; 7'b0000001: o_exopt = `EXU_MULW ; default: ; endcase
+            `FUNC3_SRL_SRA_DIVU:  case (func7) 7'b0000000:o_exopt = `EXU_SRLW; 7'b0100000: o_exopt = `EXU_SRAW; 7'b0000001: o_exopt = `EXU_DIVUW; default: ; endcase
             `FUNC3_XOR_DIV:       o_exopt  = `EXU_DIVW;
             `FUNC3_OR_REM:        o_exopt  = `EXU_REMW;
             `FUNC3_AND_REMU:      o_exopt  = `EXU_REMUW;
             `FUNC3_SLL_MULH:      o_exopt  = `EXU_SLLW;
-            default:              s_id_err[1] = 1'b1; //func3_err
+            default:              ;
           endcase
         end
-      default:  s_id_err[0] = 1'b1; //opc_err
+      default:  ;
     endcase
   end
 

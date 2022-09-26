@@ -10,8 +10,9 @@ module rca_nbit#(
 
   wire [N-1:0] p;
   wire [N-1:0] g;
+  // verilator lint_off UNOPTFLAT
   wire [N:0] c;
-  assign c[0] = i_c;
+  // verilator lint_on UNOPTFLAT
 
   for(genvar i=0; i<N; i=i+1)begin:csa
     assign g[i]   = i_a[i] & i_b[i];
@@ -20,6 +21,7 @@ module rca_nbit#(
     assign o_s[i] = p[i] ^ c[i];
   end
 
+  assign c[0] = i_c;
   assign o_c = c[N];
 
 endmodule

@@ -23,15 +23,21 @@ extern "C" void check_finsih(int ins,int a0zero){
 
 extern uint64_t *dut_reg;
 extern uint64_t dut_pc;
-extern bool deal_device;
+extern bool diff_skip;
+extern bool diff_commit;
+
 extern "C" void set_reg_ptr(const svOpenArrayHandle r) {
   dut_reg = (uint64_t *)(((VerilatedDpiOpenVar*)r)->datap());
 }
 
-extern "C" void diff_read_pc(uint64_t rtl_pc){
+extern "C" void get_diff_pc(uint64_t rtl_pc){
   dut_pc = rtl_pc;
 }
 
-extern "C" void diff_skip_device(svBit s_wbu_device){
-  deal_device = s_wbu_device;
+extern "C" void get_diff_skip(svBit skip){
+  diff_skip = skip;
+}
+
+extern "C" void get_diff_commit(svBit commit){
+  diff_commit = commit;
 }
