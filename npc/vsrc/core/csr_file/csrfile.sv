@@ -30,15 +30,7 @@ module csrfile (
   input  logic                  i_clint_mtip    ,
 
   // for difftest:
-  output logic [`CPU_WIDTH-1:0] s_mtvec         ,
-  output logic [`CPU_WIDTH-1:0] s_mepc          ,
-  output logic [`CPU_WIDTH-1:0] s_mstatus       ,
-  output logic [`CPU_WIDTH-1:0] s_mcause        ,
-  output logic [`CPU_WIDTH-1:0] s_mcycle        ,
-  output logic [`CPU_WIDTH-1:0] s_mie           ,
-  output logic [`CPU_WIDTH-1:0] s_mip           ,
-  output logic [`CPU_WIDTH-1:0] s_mscratch      ,
-  output logic [`CPU_WIDTH-1:0] s_sstatus
+  output logic [`CPU_WIDTH-1:0] s_mcause
 );
 
   // 1. csr reg file: //////////////////////////////////////////////////////////////////
@@ -213,14 +205,6 @@ module csrfile (
   );
 
   // 4. use for difftest sim :///////////////////////////////////////////////////////////
-  assign s_mepc     = wen_mepc     ? wdata_mepc     : mepc    ;
-  assign s_mcause   = wen_mcause   ? wdata_mcause   : mcause  ;
-  assign s_mtvec    = wen_mtvec    ? wdata_mtvec    : mtvec   ;
-  assign s_mstatus  = wen_mstatus  ? wdata_mstatus  : mstatus ;
-  assign s_sstatus  = wen_mstatus  ? wdata_sstatus  : sstatus ;
-  assign s_mcycle   = wdata_mcycle ;
-  assign s_mie      = wen_mie      ? wdata_mie      : mie     ;
-  assign s_mip      = wen_mip      ? {i_wdata[`CPU_WIDTH-1:`M_MIP_MTIP+1],mip[`M_MIP_MTIP],i_wdata[`M_MIP_MTIP-1:0]} : mip ;
-  assign s_mscratch = wen_mscratch ? wdata_mscratch : mscratch;
+  assign s_mcause =  mcause  ;
 
 endmodule

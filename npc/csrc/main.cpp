@@ -14,7 +14,7 @@ bool diff_commit  = false;
 bool system_exit  = false;
 int  good_trap    = false;
 
-extern uint64_t dut_pc;
+extern regfile dut_reg;
 
 void uart_input(uartlite &uart);
 void connect_wire(axi4_ptr <32,64,4> &mmio_ptr, axi4_ptr <32,64,4> &mem_ptr, Vtop *top);
@@ -86,7 +86,7 @@ int main(int argc, char** argv, char** env) {
         if(diff_commit || diff_skip){
           // 1. check last cycle reg status:
           if(diff_skip_r){ //skip write or read device ins.
-            cp2ref_reg(dut_pc);
+            diff_cpdutreg2ref();
           }
           else{
             if(!difftest_check()){

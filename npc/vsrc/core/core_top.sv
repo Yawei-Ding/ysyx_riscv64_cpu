@@ -393,15 +393,7 @@ module core_top(
     .o_mip           (mip            ),
     .o_mie           (mie            ),
     .i_clint_mtip    (clint_mtip     ),
-    .s_mtvec         (s_mtvec        ),
-    .s_mepc          (s_mepc         ),
-    .s_mstatus       (s_mstatus      ),
-    .s_mcause        (s_mcause       ),
-    .s_mcycle        (s_mcycle       ),
-    .s_mie           (s_mie          ),
-    .s_mip           (s_mip          ),
-    .s_mscratch      (s_mscratch     ),
-    .s_sstatus       (s_sstatus      )
+    .s_mcause        (s_mcause       )
   );
 
   // 2.7 bru ///////////////////////////////////////////////
@@ -430,26 +422,29 @@ module core_top(
   );
 
   // 3.sim:  ////////////////////////////////////////////////////////
-  // 3.1 update rst state, wb stage pc, skip, commit to sim.
+  // 3.1 update rst state, wb stage pc, skip, commit, finish to sim.
   import "DPI-C" function void check_rst(input bit rst_flag);
-  import "DPI-C" function void get_diff_pc(input longint rtl_pc);
   import "DPI-C" function void get_diff_skip(input bit skip);
   import "DPI-C" function void get_diff_commit(input bit commit);
+  import "DPI-C" function void check_finsih(input int ins,input bit a0zero);
+  wire real_commit = wbu_commit & !wbu_nop;
   always @(*) begin
     check_rst(i_rst_n);
-    get_diff_pc(wbu_pc);
     get_diff_skip(s_wbu_uart);
-    get_diff_commit(wbu_commit & !wbu_nop);
-  end
-
-  // 3.2 update wb stage finish.
-  import "DPI-C" function void check_finsih(input int ins,input bit a0zero);
-  always@(*)begin
+    get_diff_commit(real_commit);
     check_finsih(wbu_ins,s_a0zero);
   end
 
-  // 3.3 regfile.
-  import "DPI-C" function void set_reg_ptr(input logic [63:0] a []);
-  initial set_reg_ptr(s_regs);
+  // 3.2 regfile.
+  import "DPI-C" function void get_dut_regs(input longint dut_pc, input longint dut_x0, input longint dut_x1, input longint dut_x2, input longint dut_x3, input longint dut_x4, input longint dut_x5,
+    input longint dut_x6, input longint dut_x7, input longint dut_x8, input longint dut_x9, input longint dut_x10, input longint dut_x11, input longint dut_x12,input longint dut_x13, input longint dut_x14, 
+    input longint dut_x15, input longint dut_x16, input longint dut_x17, input longint dut_x18, input longint dut_x19, input longint dut_x20, input longint dut_x21, input longint dut_x22, input longint dut_x23,
+    input longint dut_x24, input longint dut_x25, input longint dut_x26, input longint dut_x27, input longint dut_x28, input longint dut_x29, input longint dut_x30, input longint dut_x31, 
+    input longint dut_mstatus, input longint dut_mtvec, input longint dut_mepc, input longint dut_mcause);
+  always @(*) begin
+    get_dut_regs(wbu_pc, s_regs[0], s_regs[1], s_regs[2], s_regs[3], s_regs[4], s_regs[5], s_regs[6], s_regs[7], s_regs[8], s_regs[9], s_regs[10], s_regs[11], s_regs[12],s_regs[13], s_regs[14], s_regs[15],
+          s_regs[16], s_regs[17], s_regs[18], s_regs[19], s_regs[20], s_regs[21], s_regs[22], s_regs[23], s_regs[24], s_regs[25], s_regs[26], s_regs[27], s_regs[28], s_regs[29], s_regs[30], s_regs[31],
+          mstatus, mtvec, mepc, s_mcause);
+  end
 
 endmodule

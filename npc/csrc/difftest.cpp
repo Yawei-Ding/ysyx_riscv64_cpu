@@ -3,14 +3,16 @@
 
 #ifdef  DIFFTEST_ON
 
-extern uint64_t *dut_reg;
-extern uint64_t dut_pc;
+extern regfile dut_reg;
 
-enum { DIFFTEST_TO_DUT, DIFFTEST_TO_REF };
+enum { DIFFTEST_TO_DUT, DIFFTEST_TO_REF};
 void (*ref_difftest_memcpy)(uint64_t addr, void *buf, size_t n, bool direction) = NULL;
 void (*ref_difftest_regcpy)(void *dut, bool direction) = NULL;
 void (*ref_difftest_exec)(uint64_t n) = NULL;
 void (*ref_difftest_raise_intr)(uint64_t NO) = NULL;
+
+void init_ref_reg();
+void init_ref_mem(char *img_file);
 
 void difftest_init(char *ref_so_file, char *img_file) {
   assert(ref_so_file != NULL);
@@ -36,28 +38,31 @@ void difftest_init(char *ref_so_file, char *img_file) {
 
   ref_difftest_init();
 
-  cp2ref_memory(img_file);
-  cp2ref_reg(INST_START);
-
+  init_ref_mem(img_file);
+  init_ref_reg();
 }
 
 bool difftest_check() {
-  regfile ref,dut;
+  regfile ref;
   ref_difftest_regcpy(&ref, DIFFTEST_TO_DUT);
-  dut = pack_dut_regfile(dut_reg,dut_pc);
-  return checkregs(&ref, &dut);
+  return checkregs(&ref, &dut_reg);
 }
 
 void difftest_step() {
   ref_difftest_exec(1);
 }
 
-void cp2ref_reg(uint64_t pc){
-  regfile dut = pack_dut_regfile(dut_reg, pc);
-  ref_difftest_regcpy(&dut, DIFFTEST_TO_REF);
+void diff_cpdutreg2ref() {
+  ref_difftest_regcpy(&dut_reg, DIFFTEST_TO_REF);
 }
 
-void cp2ref_memory(char *img_file) {
+void init_ref_reg(){
+  regfile init_regs = {0};
+  init_regs.pc = INST_START;
+  ref_difftest_regcpy(&init_regs, DIFFTEST_TO_REF);
+}
+
+void init_ref_mem(char *img_file) {
 
   // 1. get size of img file: /////////////////////////////////////////
   if (img_file == NULL) {
