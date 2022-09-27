@@ -2,8 +2,11 @@
 #include <getopt.h>
 
 char *img_file = NULL;
+char *log_file = NULL;
 static char *diff_so_file = NULL;
+
 void init_device();
+void init_log(const char *log_file);
 static int parse_args(int argc, char *argv[]);
 static long load_img(char *img_file);
 
@@ -11,8 +14,11 @@ void npc_init(int argc, char *argv[],axi4_mem <32,64,4> *mem) {
   // Parse arguments.
   parse_args(argc, argv);
 
+  // init log.
+  init_log(log_file);
+
   // init device.
-  //init_device();
+  init_device();
 
   /* Load the image to memory. This will overwrite the built-in image. */
   long img_size = load_img(img_file);
@@ -27,6 +33,7 @@ static int parse_args(int argc, char *argv[]) {
   const struct option table[] = {
     {"img"      , required_argument, NULL, 'i'},
     {"diff"     , required_argument, NULL, 'd'},
+    {"log"      , required_argument, NULL, 'l'},
     {0          , 0                , NULL,  0 },
   };
   int o;
@@ -34,6 +41,7 @@ static int parse_args(int argc, char *argv[]) {
     switch (o) {
       case 'i': img_file     = optarg; break;
       case 'd': diff_so_file = optarg; break;
+      case 'l': log_file     = optarg; break;
     }
   }
   return 0;

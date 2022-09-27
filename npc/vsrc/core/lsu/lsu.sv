@@ -56,7 +56,7 @@ module lsu (
   
   // 6. for sim:
   output logic                    s_lsu_lsclint ,
-  output logic                    s_lsu_uart
+  output logic                    s_lsu_device
 );
 
   // 1. shake hands to reg pre stage signals:////////////////////////////////s/////////////////////////////////
@@ -166,6 +166,6 @@ module lsu (
   assign o_lsu_ins     = exu_ins_r    ;
   assign o_lsu_nop     = exu_nop_r    ;
   assign s_lsu_lsclint = ldst_en & en_clint;
-  assign s_lsu_uart    = stor_en & (dCacheIf_M.addr == `ADR_WIDTH'h10000004);
-  // assign s_lsu_uart    = stor_en & (dCacheIf_M.addr >= `ADR_WIDTH'h10000000 & dCacheIf_M.addr <= `ADR_WIDTH'h10000fff);
+  assign s_lsu_device  = stor_en & !lsu_addr[31];
+
 endmodule

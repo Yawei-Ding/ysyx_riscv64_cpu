@@ -15,11 +15,12 @@ CFLAGS			+= -g -I${INC_PATH}#								# -g for gdb
 LDFLAGS			+= -ldl -lSDL2# 									# -ldl for dynamic link(nemu difftest).
 
 # 3.run info: 
+LOG ?= $(NPC_HOME)/obj_dir/log.txt
 IMG ?= ../am-kernels/tests/cpu-tests/build/dummy-riscv64-npc.bin#	# program img, run on npc.
 DIFFTEST := ${NEMU_HOME}/build/riscv64-nemu-interpreter-so#			# nemu img, use for difftest.
 OBJ_DIR := ./obj_dir# 												# npc obj path.
 BIN := ${OBJ_DIR}/V${TOP_MODULE}#									# npc obj bin.
-RUN_FLAGS := --img=${IMG} --diff=${DIFFTEST}#						# npc main args.
+RUN_FLAGS := --img=${IMG} --diff=${DIFFTEST} --log=${LOG}#			# npc main args.
 NPC_EXEC := ${BIN} ${RUN_FLAGS}#									# npc bin + args.
 
 .PHONY:run gdb wave clean

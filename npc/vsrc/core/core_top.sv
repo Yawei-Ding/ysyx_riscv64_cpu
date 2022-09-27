@@ -45,7 +45,7 @@ module core_top(
 
   // simulation signals:
   logic                   s_a0zero ;
-  logic                   s_lsu_uart, s_wbu_uart;
+  logic                   s_lsu_device, s_wbu_device;
   logic [2:0]             s_id_err ;
   logic [`CPU_WIDTH-1:0]  s_regs [`REG_COUNT-1:0];
   logic [`CPU_WIDTH-1:0]  s_mtvec, s_mepc, s_mstatus, s_mcause, s_mcycle, s_mie, s_mip, s_mscratch, s_sstatus;
@@ -252,7 +252,7 @@ module core_top(
     .o_lsu_ins     (lsu_ins       ),
     .o_lsu_nop     (lsu_nop       ),
     .s_lsu_lsclint (s_lsu_lsclint ),
-    .s_lsu_uart    (s_lsu_uart    )
+    .s_lsu_device  (s_lsu_device  )
   );
 
   // 2.5 wbu ///////////////////////////////////////////////
@@ -285,7 +285,7 @@ module core_top(
     .i_iru_intr    (iru_intr     ),
     .i_lsu_nop     (lsu_nop      ),
     .s_lsu_lsclint (s_lsu_lsclint),
-    .s_lsu_uart    (s_lsu_uart   ),
+    .s_lsu_device  (s_lsu_device ),
     .o_wbu_rdid    (wbu_rdid     ),
     .o_wbu_rdwen   (wbu_rdwen    ),
     .o_wbu_rd      (wbu_rd       ),
@@ -297,7 +297,7 @@ module core_top(
     .o_wbu_ins     (wbu_ins      ),
     .o_wbu_nop     (wbu_nop      ),
     .s_wbu_lsclint (s_wbu_lsclint),
-    .s_wbu_uart    (s_wbu_uart   )
+    .s_wbu_device  (s_wbu_device )
   );
 
   logic [`CPU_WIDTH-1:0]  mie           ;
@@ -430,7 +430,7 @@ module core_top(
   wire real_commit = wbu_commit & !wbu_nop;
   always @(*) begin
     check_rst(i_rst_n);
-    get_diff_skip(s_wbu_uart);
+    get_diff_skip(s_wbu_device);
     get_diff_commit(real_commit);
     check_finsih(wbu_ins,s_a0zero);
   end
