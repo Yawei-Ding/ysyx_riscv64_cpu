@@ -1,7 +1,7 @@
 #include "include/include.h"
 #include "Vtop__Dpi.h"
 #include "verilated.h"
-#include "verilated_vcd_c.h"
+#include "verilated_fst_c.h"
 
 #include <iostream>
 #include <termios.h>
@@ -17,9 +17,10 @@ int  good_trap    = false;
 extern regfile dut_reg;
 
 void connect_wire(axi4_ptr <32,64,4> &mem_ptr, Vtop *top);
+void device_update();
 
 #ifdef DUMPWAVE_ON
-void dump_wave(VerilatedContext* contextp,VerilatedVcdC* tfp,Vtop* top);
+void dump_wave(VerilatedContext* contextp,VerilatedFstC* tfp,Vtop* top);
 #endif
 
 int main(int argc, char** argv, char** env) {
@@ -27,7 +28,7 @@ int main(int argc, char** argv, char** env) {
   VerilatedContext* contextp = new VerilatedContext;
   Vtop* top = new Vtop;
 #ifdef DUMPWAVE_ON
-  VerilatedVcdC* tfp = new VerilatedVcdC;
+  VerilatedFstC* tfp = new VerilatedFstC;
   contextp->traceEverOn(true);
   top->trace(tfp, 0);                         // Trace 0 levels of hierarchy (or see below)
   tfp->open("obj_dir/sim.fst");
@@ -63,7 +64,9 @@ int main(int argc, char** argv, char** env) {
         mem_sigs.update_output(mem_ref);
 #ifdef DIFFTEST_ON
         if(diff_commit || diff_skip){
-          // 1. check last cycle reg status:
+          // 1. update device;
+          device_update();
+          // 2. check last cycle reg status:
           if(diff_skip_r){ //skip write or read device ins.
             diff_cpdutreg2ref();
           }
@@ -73,7 +76,7 @@ int main(int argc, char** argv, char** env) {
               break;
             }
           }
-          // 2. nemu step and update nemu regs/mem:
+          // 3. nemu step and update nemu regs/mem:
           if(!diff_skip){
             difftest_step();
           }
@@ -109,7 +112,7 @@ int main(int argc, char** argv, char** env) {
 }
 
 #ifdef DUMPWAVE_ON
-void dump_wave(VerilatedContext* contextp,VerilatedVcdC* tfp,Vtop* top)
+void dump_wave(VerilatedContext* contextp,VerilatedFstC* tfp,Vtop* top)
 {
   contextp->timeInc(1);
   tfp->dump(contextp->time());

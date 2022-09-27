@@ -7,7 +7,7 @@ SEARCHPATH := $(NPC_HOME)/vsrc
 # 2.verilator flags:
 VERILATOR_FLAGS += -I${SEARCHPATH}
 VERILATOR_FLAGS += --top ${TOP_MODULE}
-VERILATOR_FLAGS += --trace --cc --exe --build --threads 2 -j 8
+VERILATOR_FLAGS += --trace-fst --cc --exe --build --threads 2 -j 8
 VERILATOR_FLAGS += -Wno-fatal		# only print lint warning, but not terminate compile.
 VERILATOR_FLAGS += -Wno-UNUSED 		# close <unused> warning.
 INC_PATH   		?= $(NPC_HOME)/csrc/include
@@ -37,7 +37,7 @@ gdb:com ${DIFFTEST}
 	@gdb --silent -s ${BIN} --args ${NPC_EXEC}
 
 wave:
-	@gtkwave ${OBJ_DIR}/sim.vcd
+	@gtkwave ${OBJ_DIR}/sim.fst
 
 clean:
 	rm -rf ${OBJ_DIR}
