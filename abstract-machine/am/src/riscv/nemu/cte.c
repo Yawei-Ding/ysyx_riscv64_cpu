@@ -8,14 +8,16 @@ Context* __am_irq_handle(Context *c) {
 
   if (user_handler) {
     Event ev = {0};
-    if(c->mcause>= SYS_exit && c->mcause<=SYS_gettimeofday){
-      ev.event = EVENT_SYSCALL;
+    if(c->mcause== 0x0b){
+      if(c->GPR1>= SYS_exit && c->GPR1<=SYS_gettimeofday){
+        ev.event = EVENT_SYSCALL;
+      }
+      else if(c->GPR1 == -1){
+        ev.event = EVENT_YIELD;
+      }
     }
     else{
-      switch (c->mcause) {
-        case -1: ev.event = EVENT_YIELD; break;
-        default: ev.event = EVENT_ERROR; break;
-      }
+        ev.event = EVENT_ERROR;
     }
 
     c = user_handler(ev, c);
