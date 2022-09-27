@@ -27,9 +27,9 @@ bool checkregs(regfile *ref, regfile *dut) {
     }
   }
   for (int i = 0; i < ARRLEN(csrs); i++) {
-    if(ref->x[i] != dut->x[i]){
+    if(ref->csr[i] != dut->csr[i]){
       printf("difftest error at nextpc = 0x%lx, ",dut->pc);
-      printf("csr %s is diff: ref = 0x%lx, dut = 0x%lx\n",regs[i],ref->csr[i],dut->csr[i]);
+      printf("csr %s is diff: ref = 0x%lx, dut = 0x%lx\n",csrs[i],ref->csr[i],dut->csr[i]);
       return false;
     }
   }
@@ -42,6 +42,6 @@ void print_regs(){
     printf("dut reg %3s = 0x%lx\n",regs[i],dut_reg.x[i]);
   }
   for(int i = 0; i < ARRLEN(csrs); i++){
-    printf("dut reg %3s = 0x%lx\n",regs[i],dut_reg.csr[i]);
+    printf("dut csr %3s = 0x%lx\n",csrs[i],dut_reg.csr[i]);
   }
 }

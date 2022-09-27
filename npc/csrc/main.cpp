@@ -30,7 +30,7 @@ int main(int argc, char** argv, char** env) {
   VerilatedVcdC* tfp = new VerilatedVcdC;
   contextp->traceEverOn(true);
   top->trace(tfp, 0);                         // Trace 0 levels of hierarchy (or see below)
-  tfp->open("obj_dir/sim.vcd");
+  tfp->open("obj_dir/sim.fst");
 #endif
   ///////////////////////////////// init axi4 connect:  ///////////////////////////////
   axi4_ptr <32,64,4> mem_ptr;

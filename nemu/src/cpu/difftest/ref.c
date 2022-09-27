@@ -18,6 +18,9 @@ void diff_set_regs(CPU_state* dut){
     cpu.gpr[i]= dut->gpr[i];
   }
   cpu.pc = dut->pc;
+  for (int i = 0; i < 4; i++) {
+    cpu.csr[i]= dut->csr[i];
+  }
 }
 
 void diff_get_regs(CPU_state* dut){
@@ -25,6 +28,9 @@ void diff_get_regs(CPU_state* dut){
     dut->gpr[i] = cpu.gpr[i];
   }
   dut->pc = cpu.pc;
+  for (int i = 0; i < 4; i++) {
+    dut->csr[i] = cpu.csr[i];
+  }
 }
 
 void difftest_regcpy(void *dut, bool direction) {
