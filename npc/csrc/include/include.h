@@ -6,11 +6,9 @@
 #include <stdlib.h>
 #include <assert.h>
 
-#include "axi_mem/axi4.hpp"
-#include "axi_mem/axi4_mem.hpp"
-#include "axi_mem/axi4_xbar.hpp"
-#include "axi_mem/mmio_mem.hpp"
-#include "axi_mem/uartlite.hpp"
+#include "axi_slave/axi4.hpp"
+#include "axi_slave/axi4_slave.hpp"
+#include "axi_slave/axi4_mem.hpp"
 
 #define ARRLEN(arr) (int)(sizeof(arr) / sizeof(arr[0]))
 
@@ -35,7 +33,7 @@ void print_regs();
 bool checkregs(regfile *ref, regfile *dut);
 
 #ifdef DIFFTEST_ON
-void difftest_init(char *ref_so_file, char *img_file);
+void difftest_init(char *ref_so_file, long img_size);
 bool difftest_check();
 void difftest_step();
 void diff_cpdutreg2ref();

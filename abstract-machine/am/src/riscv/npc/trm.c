@@ -1,4 +1,5 @@
 #include <am.h>
+#include <npc.h>
 #include <klib-macros.h>
 
 extern char _heap_start;
@@ -14,10 +15,8 @@ Area heap = RANGE(&_heap_start, PMEM_END);
 #endif
 static const char mainargs[] = MAINARGS;
 
-#define SERIAL_PORT   0x10000000 // 0x1000_0000 ~ 0x1000_0fff, same to ysyx-SoC
-
 void putch(char ch) {
-  *(volatile uint8_t  *)(SERIAL_PORT+4) = ch;  // uartlite.
+  outb(SERIAL_PORT, ch);
 }
 
 void halt(int code) {

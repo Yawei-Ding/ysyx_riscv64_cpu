@@ -2,7 +2,7 @@
 CSRC +=  $(shell find $(abspath ./csrc) -name "*.cpp")
 VSRC +=  $(shell find $(abspath ./vsrc) -name "*.v" -or -name "*.sv")
 TOP_MODULE := top
-SEARCHPATH := ./vsrc
+SEARCHPATH := $(NPC_HOME)/vsrc
 
 # 2.verilator flags:
 VERILATOR_FLAGS += -I${SEARCHPATH}
@@ -10,7 +10,9 @@ VERILATOR_FLAGS += --top ${TOP_MODULE}
 VERILATOR_FLAGS += --trace --cc --exe --build --threads 2 -j 8
 VERILATOR_FLAGS += -Wno-fatal		# only print lint warning, but not terminate compile.
 VERILATOR_FLAGS += -Wno-UNUSED 		# close <unused> warning.
-GCC_LDFLAGS := -CFLAGS -g -LDFLAGS -ldl								# -g for gdb, -ldl for dynamic link(nemu difftest).
+INC_PATH   		?= $(NPC_HOME)/csrc/include
+CFLAGS			+= -g -I${INC_PATH}#								# -g for gdb
+LDFLAGS			+= -ldl -lSDL2# 									# -ldl for dynamic link(nemu difftest).
 
 # 3.run info: 
 IMG ?= ../am-kernels/tests/cpu-tests/build/dummy-riscv64-npc.bin#	# program img, run on npc.
@@ -23,7 +25,7 @@ NPC_EXEC := ${BIN} ${RUN_FLAGS}#									# npc bin + args.
 .PHONY:run gdb wave clean
 
 com:${CSRC} ${VSRC}
-	@verilator ${VERILATOR_FLAGS} ${CSRC} ${VSRC} ${GCC_LDFLAGS}
+	@verilator ${VERILATOR_FLAGS} ${CSRC} ${VSRC} $(addprefix -CFLAGS , $(CFLAGS)) $(addprefix -LDFLAGS , $(LDFLAGS))
 
 run:com
 	$(call git_commit, "sim RTL") # DO NOT REMOVE THIS LINE!!!

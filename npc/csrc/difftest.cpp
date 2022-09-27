@@ -11,10 +11,7 @@ void (*ref_difftest_regcpy)(void *dut, bool direction) = NULL;
 void (*ref_difftest_exec)(uint64_t n) = NULL;
 void (*ref_difftest_raise_intr)(uint64_t NO) = NULL;
 
-void init_ref_reg();
-void init_ref_mem(char *img_file);
-
-void difftest_init(char *ref_so_file, char *img_file) {
+void difftest_init(char *ref_so_file, long img_size) {
   assert(ref_so_file != NULL);
 
   void *handle;
@@ -38,8 +35,11 @@ void difftest_init(char *ref_so_file, char *img_file) {
 
   ref_difftest_init();
 
-  init_ref_mem(img_file);
-  init_ref_reg();
+  ref_difftest_memcpy(PMEM_START,guest_to_host(PMEM_START), img_size, DIFFTEST_TO_REF);
+
+  dut_reg.pc = INST_START;
+  ref_difftest_regcpy(&dut_reg, DIFFTEST_TO_REF);
+
 }
 
 bool difftest_check() {
@@ -54,39 +54,6 @@ void difftest_step() {
 
 void diff_cpdutreg2ref() {
   ref_difftest_regcpy(&dut_reg, DIFFTEST_TO_REF);
-}
-
-void init_ref_reg(){
-  regfile init_regs = {0};
-  init_regs.pc = INST_START;
-  ref_difftest_regcpy(&init_regs, DIFFTEST_TO_REF);
-}
-
-void init_ref_mem(char *img_file) {
-
-  // 1. get size of img file: /////////////////////////////////////////
-  if (img_file == NULL) {
-    printf("No image is given. Use the default build-in image.\n");
-    return ;
-  }
-  FILE *fp = fopen(img_file, "rb");
-  if(fp == NULL){
-    printf("Can not open '%s'\n", img_file);
-    assert(0); 
-  }
-  fseek(fp, 0, SEEK_END); // move cur to end.
-  long img_size = ftell(fp);
-
-  // 2. read data to mem, and move to difftest :///////////////////////
-  uint8_t* ptr = (uint8_t*)malloc(img_size);
-  fseek(fp, 0, SEEK_SET);
-  int ret = fread(ptr, img_size, 1, fp);
-  assert(ret == 1);
-  ref_difftest_memcpy(PMEM_START,ptr, img_size, DIFFTEST_TO_REF);
-
-  // 3. close file, and clear mem://///////////////////////////////////
-  fclose(fp);
-  free(ptr);
 }
 
 #endif
