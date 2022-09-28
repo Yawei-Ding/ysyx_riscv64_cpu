@@ -35,7 +35,7 @@ class axi4_slave {
         uint64_t        r_current_addr; // current burst address in r_data buffer (physical address % 4096)
         AUTO_SIG(       arid        ,ID_WIDTH-1,0);
         axi_burst_type  r_burst_type;
-        unsigned int    r_each_len;
+        unsigned int    r_each_size;
         unsigned int    r_nr_trans;
         unsigned int    r_cur_trans;
         unsigned int    r_tot_len;
@@ -46,7 +46,7 @@ class axi4_slave {
 
         bool read_check() {
             if (r_burst_type == BURST_RESERVED) return false;
-            if (r_burst_type == BURST_WRAP && (r_current_addr % r_each_len)) return false;
+            if (r_burst_type == BURST_WRAP && (r_current_addr % r_each_size)) return false;
             if (r_burst_type == BURST_WRAP) {
                 if (r_nr_trans != 2 || r_nr_trans != 4 || r_nr_trans != 8 || r_nr_trans != 16) {
                     return false;
@@ -54,7 +54,7 @@ class axi4_slave {
             }
             uint64_t rem_addr = 4096 - (r_start_addr % 4096);
             if (r_tot_len > rem_addr) return false;
-            if (r_each_len > D_bytes) return false;
+            if (r_each_size > D_bytes) return false;
             return true;
         }
 
@@ -82,9 +82,10 @@ class axi4_slave {
                 }
                 else { // INCR, WRAP
                     pin.rresp = r_resp;
-                    pin.rdata = *(AUTO_SIG(*,D_WIDTH-1,0))(&r_data[r_current_addr - (r_current_addr % D_bytes)]);
-                    r_current_addr += r_each_len - (r_current_addr % r_each_len);
-                    if (r_burst_type == BURST_WRAP && r_current_addr == ((r_start_addr % 4096) + r_each_len * r_nr_trans)) {
+                    pin.rdata = *(AUTO_SIG(*,D_WIDTH-1,0))(&r_data[r_current_addr]); // update by dingyawei.
+                    // pin.rdata = *(AUTO_SIG(*,D_WIDTH-1,0))(&r_data[r_current_addr - (r_current_addr % D_bytes)]);
+                    r_current_addr += r_each_size - (r_current_addr % r_each_size);
+                    if (r_burst_type == BURST_WRAP && r_current_addr == ((r_start_addr % 4096) + r_each_size * r_nr_trans)) {
                         r_current_addr = r_start_addr % 4096;
                     }
                 }
@@ -94,12 +95,12 @@ class axi4_slave {
         void read_init(axi4_ref <A_WIDTH,D_WIDTH,ID_WIDTH> &pin) {
             arid            = static_cast<unsigned int>(pin.arid);
             r_burst_type    = static_cast<axi_burst_type>(pin.arburst);
-            r_each_len      = 1 << pin.arsize;
+            r_each_size     = 1 << pin.arsize;
             r_nr_trans      = pin.arlen + 1;
-            r_current_addr  = (r_burst_type == BURST_WRAP) ? (pin.araddr % 4096) : ((pin.araddr % 4096) - (pin.araddr % r_each_len));
-            r_start_addr    = (r_burst_type == BURST_WRAP) ? (pin.araddr - (pin.araddr % (r_each_len * r_nr_trans) ) ) : pin.araddr;
+            r_current_addr  = (r_burst_type == BURST_WRAP) ? (pin.araddr % 4096) : ((pin.araddr % 4096) - (pin.araddr % r_each_size));
+            r_start_addr    = (r_burst_type == BURST_WRAP) ? (pin.araddr - (pin.araddr % (r_each_size * r_nr_trans) ) ) : pin.araddr;
             r_cur_trans     = 0;
-            r_tot_len       = ( (r_burst_type == BURST_FIXED) ? r_each_len : r_each_len * r_nr_trans) - (r_start_addr % r_each_len); // first beat can be unaligned
+            r_tot_len       = ( (r_burst_type == BURST_FIXED) ? r_each_size : r_each_size * r_nr_trans) - (r_start_addr % r_each_size); // first beat can be unaligned
             r_early_err     = !read_check();
             assert(!r_early_err);
             // clear unused bits.
@@ -155,7 +156,7 @@ class axi4_slave {
         uint64_t        w_current_addr;
         AUTO_SIG(       awid        ,ID_WIDTH-1,0);
         axi_burst_type  w_burst_type;
-        unsigned int    w_each_len;
+        unsigned int    w_each_size;
         int             w_nr_trans;
         int             w_cur_trans;
         unsigned int    w_tot_len;
@@ -165,24 +166,24 @@ class axi4_slave {
         uint8_t         w_buffer[D_WIDTH/8];
         bool write_check() {
             if (w_burst_type == BURST_RESERVED || w_burst_type == BURST_FIXED) return false;
-            if (w_burst_type == BURST_WRAP && (w_current_addr % w_each_len)) return false;
+            if (w_burst_type == BURST_WRAP && (w_current_addr % w_each_size)) return false;
             if (w_burst_type == BURST_WRAP) {
                 if (w_nr_trans != 2 || w_nr_trans != 4 || w_nr_trans != 8 || w_nr_trans != 16) return false;
             }
             uint64_t rem_addr = 4096 - (w_start_addr % 4096);
             if (w_tot_len > rem_addr) return false;
-            if (w_each_len > D_bytes) return false;
+            if (w_each_size > D_bytes) return false;
             return true;
         }
         void write_init(axi4_ref <A_WIDTH,D_WIDTH,ID_WIDTH> &pin) {
             awid            = pin.awid;
             w_burst_type    = static_cast<axi_burst_type>(pin.awburst);
-            w_each_len      = 1 << pin.awsize;
+            w_each_size     = 1 << pin.awsize;
             w_nr_trans      = pin.awlen + 1;
-            w_current_addr  = (w_burst_type == BURST_WRAP) ? pin.awaddr : (pin.awaddr - (pin.awaddr % w_each_len));
-            w_start_addr    = (w_burst_type == BURST_WRAP) ? (pin.awaddr - (pin.awaddr % (w_each_len * w_nr_trans))) : pin.awaddr;
+            w_current_addr  = (w_burst_type == BURST_WRAP) ? pin.awaddr : (pin.awaddr - (pin.awaddr % w_each_size));
+            w_start_addr    = (w_burst_type == BURST_WRAP) ? (pin.awaddr - (pin.awaddr % (w_each_size * w_nr_trans))) : pin.awaddr;
             w_cur_trans     = 0;
-            w_tot_len       = w_each_len * w_nr_trans - (w_start_addr % w_each_len);
+            w_tot_len       = w_each_size * w_nr_trans - (w_start_addr % w_each_size);
             w_early_err     = !write_check();
             assert(!w_early_err);
             w_resp          = RESP_OKEY;
@@ -215,13 +216,15 @@ class axi4_slave {
                 }
                 if (w_early_err) return;
                 uint64_t addr_base = w_current_addr;
-                w_current_addr += w_each_len - (addr_base % w_each_len);
-                if (w_current_addr == (w_start_addr + w_each_len * w_nr_trans)) w_cur_trans =  w_start_addr; // warp support
+                w_current_addr += w_each_size - (addr_base % w_each_size);
+                if (w_current_addr == (w_start_addr + w_each_size * w_nr_trans)) w_cur_trans =  w_start_addr; // warp support
+                /* remove by dingyawei:
                 uint64_t in_data_pos = addr_base % D_bytes;
                 addr_base -= addr_base % D_bytes;
-                uint64_t rem_data_pos = w_each_len - (in_data_pos % w_each_len); // unaligned support
+                uint64_t rem_data_pos = w_each_size - (in_data_pos % w_each_size); // unaligned support
                 // split discontinuous wstrb bits to small requests
-                std::vector<std::pair<int,int> > range = strb_to_range(pin.wstrb,in_data_pos,in_data_pos+rem_data_pos);
+                std::vector<std::pair<int,int> > range = strb_to_range(pin.wstrb,in_data_pos,in_data_pos+rem_data_pos); */
+                std::vector<std::pair<int,int> > range = strb_to_range(pin.wstrb,0,w_each_size);    // add by dingyawei.
                 for (std::pair<int,int> sub_range : range) {
                     int &addr = sub_range.first;
                     int &len  = sub_range.second;

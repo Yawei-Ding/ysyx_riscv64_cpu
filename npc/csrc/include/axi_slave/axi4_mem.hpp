@@ -17,12 +17,12 @@ class axi4_mem : public axi4_slave<A_WIDTH,D_WIDTH,ID_WIDTH>  {
 
     protected:
         axi_resp do_read(uint64_t start_addr, uint64_t size, uint8_t* buffer) {
-            //printf("read at addr: %lx, size:%d\n",start_addr, size);
             word_t data = paddr_read(start_addr, (int)size);
             memcpy(buffer,&data,size);
             return RESP_OKEY;
         }
         axi_resp do_write(uint64_t start_addr, uint64_t size, const uint8_t* buffer) {
+            // printf("do_write at addr: %lx, size:%d\n",start_addr, size);
             word_t data;
             memcpy(&data,buffer,size);
             paddr_write(start_addr, (int)size, data);
