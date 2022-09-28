@@ -25,8 +25,10 @@ module lsu (
   input  logic                    i_exu_csrdwen , // csr dest write enable.
   input  logic  [`CPU_WIDTH-1:0]  i_exu_csrd    ,
   input  logic  [`CPU_WIDTH-1:0]  i_exu_pc      ,
-  input  logic  [`INS_WIDTH-1:0]  i_exu_ins     ,
+  input  logic                    i_exu_ecall   ,
+  input  logic                    i_exu_mret    ,
   input  logic                    i_exu_nop     ,
+  input  logic  [`INS_WIDTH-1:0]  s_exu_ins     ,
 
   // 4. iru signals:
   input  logic                    i_iru_excp    ,
@@ -51,10 +53,12 @@ module lsu (
   output logic                    o_lsu_csrdwen , // csr dest write enable.
   output logic  [`CPU_WIDTH-1:0]  o_lsu_csrd    ,
   output logic  [`CPU_WIDTH-1:0]  o_lsu_pc      ,
-  output logic  [`INS_WIDTH-1:0]  o_lsu_ins     ,
+  output logic                    o_lsu_ecall   ,
+  output logic                    o_lsu_mret    ,
   output logic                    o_lsu_nop     ,
-  
+
   // 6. for sim:
+  output logic  [`INS_WIDTH-1:0]  s_lsu_ins     ,
   output logic                    s_lsu_lsclint ,
   output logic                    s_lsu_device
 );
@@ -94,18 +98,20 @@ module lsu (
   logic                    exu_csrdwen_r  ;
   logic  [`CPU_WIDTH-1:0]  exu_csrd_r     ;
   logic  [`CPU_WIDTH-1:0]  exu_pc_r       ;
-  logic  [`INS_WIDTH-1:0]  exu_ins_r      ;
+  logic                    exu_ecall_r    ;
+  logic                    exu_mret_r     ;
   logic                    exu_nop_r      ;
-  
+  logic  [`INS_WIDTH-1:0]  exu_ins_r      ;
+
   stl_reg #(
-    .WIDTH      (4*`CPU_WIDTH+`REG_ADDRW+`CSR_ADDRW+7+`INS_WIDTH+2),
+    .WIDTH      (4*`CPU_WIDTH+`REG_ADDRW+`CSR_ADDRW+11+`INS_WIDTH),
     .RESET_VAL  (0       )
   ) prereg (
   	.i_clk      (i_clk   ),
     .i_rst_n    (i_rst_n ),
     .i_wen      (i_flush | pre_sh ),
-    .i_din      (i_flush ? 0: {i_exu_exres, i_exu_rs2, i_exu_lsfunc3, i_exu_lden, i_exu_sten, i_exu_rdid, i_exu_rdwen, i_exu_fencei, i_exu_csrdid, i_exu_csrdwen, i_exu_csrd, i_exu_pc, i_exu_ins, i_exu_nop} ),
-    .o_dout     (             {exu_exres_r, exu_rs2_r, exu_lsfunc3_r, exu_lden_r, exu_sten_r, exu_rdid_r, exu_rdwen_r, exu_fencei_r, exu_csrdid_r, exu_csrdwen_r, exu_csrd_r, exu_pc_r, exu_ins_r, exu_nop_r} )
+    .i_din      (i_flush ? 0: {i_exu_exres, i_exu_rs2, i_exu_lsfunc3, i_exu_lden, i_exu_sten, i_exu_rdid, i_exu_rdwen, i_exu_fencei, i_exu_csrdid, i_exu_csrdwen, i_exu_csrd, i_exu_pc, i_exu_ecall, i_exu_mret, i_exu_nop, s_exu_ins} ),
+    .o_dout     (             {exu_exres_r, exu_rs2_r, exu_lsfunc3_r, exu_lden_r, exu_sten_r, exu_rdid_r, exu_rdwen_r, exu_fencei_r, exu_csrdid_r, exu_csrdwen_r, exu_csrd_r, exu_pc_r, exu_ecall_r, exu_mret_r, exu_nop_r, exu_ins_r} )
   );
 
   // 2. deal with device :///////////////////////////////////////////////////////////////////////////////////////
@@ -163,8 +169,10 @@ module lsu (
   assign o_lsu_csrdwen = exu_csrdwen_r& pre_valid_r; // &pre_valid_r is used for bypass, to indicate lsu is valid.
   assign o_lsu_csrd    = exu_csrd_r   ;
   assign o_lsu_pc      = exu_pc_r     ;
-  assign o_lsu_ins     = exu_ins_r    ;
+  assign o_lsu_ecall   = exu_ecall_r  ;
+  assign o_lsu_mret    = exu_mret_r   ;
   assign o_lsu_nop     = exu_nop_r    ;
+  assign s_lsu_ins     = exu_ins_r    ;
   assign s_lsu_lsclint = ldst_en & en_clint;
   assign s_lsu_device  = ldst_en & !lsu_addr[31];
 

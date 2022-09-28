@@ -45,8 +45,10 @@ module idu (
   output logic [2:0]                o_idu_bfun3   ,
   // 3.6 for next stage to pipe:
   output logic [`CPU_WIDTH-1:0]     o_idu_pc      ,
-  output logic [`INS_WIDTH-1:0]     o_idu_ins     ,
-  output logic                      o_idu_nop
+  output logic                      o_idu_ecall   ,
+  output logic                      o_idu_mret    ,
+  output logic                      o_idu_nop     ,
+  output logic [`INS_WIDTH-1:0]     s_idu_ins
 );
 
   // 1. shake hands to reg pre stage signals://///////////////////////////////////////////////////////////////
@@ -62,7 +64,6 @@ module idu (
   logic [`CPU_WIDTH-1:0] ifu_pc , ifu_pc_r;
   logic [`INS_WIDTH-1:0] ifu_ins, ifu_ins_r;
   logic                  ifu_nop_r;
-
 
   assign ifu_pc     = i_ifu_pc;
   assign ifu_ins    = i_pre_nop ? `INS_WIDTH'h13 : i_ifu_ins;  // 0x13 == ADDI x0,x0,0 == nop.
@@ -150,8 +151,7 @@ module idu (
   wire [2:0] func3  = ifu_ins_r[14:12];
   wire [6:0] opcode = ifu_ins_r[ 6: 0];
 
-  assign o_idu_sysins  = (opcode == `TYPE_SYS);
-  assign o_idu_fencei  = (opcode == `TYPE_FENCE) & (func3 == 3'b001);
+  assign o_idu_sysins = (opcode == `TYPE_SYS);
 
   assign o_idu_rs1id    = o_idu_sysins ? sys_rs1id      : nom_rs1id     ;
   assign o_idu_rs2id    = o_idu_sysins ? `REG_ADDRW'b0  : nom_rs2id     ;
@@ -174,7 +174,12 @@ module idu (
   assign o_idu_brch     = o_idu_sysins ? 1'b0           : nom_brch      ;
   assign o_idu_bfun3    = o_idu_sysins ? 3'b0           : nom_bfun3     ;
   assign o_idu_pc       = ifu_pc_r     ;
-  assign o_idu_ins      = ifu_ins_r    ;
   assign o_idu_nop      = ifu_nop_r    ;
+
+  assign o_idu_fencei   = (opcode == `TYPE_FENCE) & (func3 == 3'b001);
+  assign o_idu_ecall    = o_idu_sysins & !(|ifu_ins_r[31:7]);
+  assign o_idu_mret     = o_idu_sysins & !(|ifu_ins_r[31:30]) & (&ifu_ins_r[29:28]) & !(|ifu_ins_r[27:22]) & ifu_ins_r[21] & !(|ifu_ins_r[20:7]);
+
+  assign s_idu_ins      = ifu_ins_r    ;
 
 endmodule

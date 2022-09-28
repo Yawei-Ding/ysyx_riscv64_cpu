@@ -18,9 +18,12 @@ module wbu (
   input   logic                   i_lsu_csrdwen ,
   input   logic [`CPU_WIDTH-1:0]  i_lsu_csrd    ,
   input   logic [`CPU_WIDTH-1:0]  i_lsu_pc      ,
-  input   logic [`INS_WIDTH-1:0]  i_lsu_ins     ,
-  input   logic                   i_iru_intr    ,
+  input  logic                    i_lsu_ecall   ,
+  input  logic                    i_lsu_mret    ,
   input   logic                   i_lsu_nop     ,
+  input   logic                   i_iru_intr    ,
+
+  input   logic [`INS_WIDTH-1:0]  s_lsu_ins     ,
   input   logic                   s_lsu_lsclint ,
   input   logic                   s_lsu_device  ,
 
@@ -35,10 +38,12 @@ module wbu (
   
   output  logic                   o_wbu_commit  ,
   output  logic [`CPU_WIDTH-1:0]  o_wbu_pc      ,
-  output  logic [`INS_WIDTH-1:0]  o_wbu_ins     ,
+  output logic                    o_wbu_ecall   ,
+  output logic                    o_wbu_mret    ,
   output  logic                   o_wbu_nop     ,
 
   // 4 for sim:
+  output  logic [`INS_WIDTH-1:0]  s_wbu_ins     ,
   output  logic                   s_wbu_lsclint ,
   output  logic                   s_wbu_device
 );
@@ -66,17 +71,19 @@ module wbu (
   logic [`CPU_WIDTH-1:0]  lsu_csrd_r   ;
   logic [`CPU_WIDTH-1:0]  lsu_pc_r     ;
   logic [`INS_WIDTH-1:0]  lsu_ins_r    ;
+  logic                   lsu_ecall_r  ;
+  logic                   lsu_mret_r   ;
   logic                   lsu_nop_r    ;
 
   stl_reg #(
-    .WIDTH      (4*`CPU_WIDTH+`REG_ADDRW+`CSR_ADDRW+3+`INS_WIDTH+3),
+    .WIDTH      (4*`CPU_WIDTH+`REG_ADDRW+`CSR_ADDRW+8+`INS_WIDTH),
     .RESET_VAL  (0       )
   ) regs(
   	.i_clk      (i_clk   ),
     .i_rst_n    (i_rst_n ),
     .i_wen      (i_flush | pre_sh ),
-    .i_din      (i_flush ? 0 : {i_lsu_exres, i_lsu_lsres, i_lsu_lden, i_lsu_rdid, i_lsu_rdwen, i_lsu_csrdid, i_lsu_csrdwen, i_lsu_csrd, i_lsu_pc, i_lsu_ins, i_lsu_nop, s_lsu_lsclint, s_lsu_device} ),
-    .o_dout     (              {lsu_exres_r, lsu_lsres_r, lsu_lden_r, lsu_rdid_r, lsu_rdwen_r, lsu_csrdid_r, lsu_csrdwen_r, lsu_csrd_r, lsu_pc_r, lsu_ins_r, lsu_nop_r, s_wbu_lsclint, s_wbu_device} )
+    .i_din      (i_flush ? 0 : {i_lsu_exres, i_lsu_lsres, i_lsu_lden, i_lsu_rdid, i_lsu_rdwen, i_lsu_csrdid, i_lsu_csrdwen, i_lsu_csrd, i_lsu_pc, i_lsu_ecall, i_lsu_mret, i_lsu_nop, s_lsu_ins, s_lsu_lsclint, s_lsu_device} ),
+    .o_dout     (              {lsu_exres_r, lsu_lsres_r, lsu_lden_r, lsu_rdid_r, lsu_rdwen_r, lsu_csrdid_r, lsu_csrdwen_r, lsu_csrd_r, lsu_pc_r, lsu_ecall_r, lsu_mret_r, lsu_nop_r, lsu_ins_r, s_wbu_lsclint, s_wbu_device} )
   );
 
   // 2. generate valid signals for post stage://////////////////////////////////////////////////////////////////
@@ -101,7 +108,9 @@ module wbu (
   assign o_wbu_csrdwen = o_wbu_commit & lsu_csrdwen_r;
   assign o_wbu_csrd    = lsu_csrd_r   ;
   assign o_wbu_pc      = lsu_pc_r     ;
-  assign o_wbu_ins     = lsu_ins_r    ;
+  assign o_wbu_ecall   = lsu_ecall_r  ;
+  assign o_wbu_mret    = lsu_mret_r   ;
   assign o_wbu_nop     = lsu_nop_r    ;
+  assign s_wbu_ins     = lsu_ins_r    ;
 
 endmodule

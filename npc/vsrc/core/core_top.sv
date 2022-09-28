@@ -10,9 +10,11 @@ module core_top(
 
   // control signals:
   logic [`CPU_WIDTH-1:0]  pre_pc, ifu_pc, idu_pc, exu_pc, lsu_pc, wbu_pc, iru_pc;
-  logic [`INS_WIDTH-1:0]  ifu_ins, idu_ins, exu_ins, lsu_ins, wbu_ins;
-  logic                            idu_nop, exu_nop, lsu_nop, wbu_nop;
-
+  logic [`INS_WIDTH-1:0]  ifu_ins;
+  logic                   idu_nop,   exu_nop,   lsu_nop,   wbu_nop  ;
+  logic                   idu_ecall, exu_ecall, lsu_ecall, wbu_ecall;
+  logic                   idu_mret,  exu_mret,  lsu_mret,  wbu_mret ;
+  
   logic                   clint_ren  , clint_wen  , clint_mtip;
   logic [`ADR_WIDTH-1:0]  clint_raddr, clint_waddr;
   logic [`CPU_WIDTH-1:0]  clint_rdata, clint_wdata;
@@ -46,9 +48,9 @@ module core_top(
   // simulation signals:
   logic                   s_a0zero ;
   logic                   s_lsu_device, s_wbu_device;
-  logic [2:0]             s_id_err ;
+  logic [`INS_WIDTH-1:0]  s_idu_ins, s_exu_ins, s_lsu_ins, s_wbu_ins;
   logic [`CPU_WIDTH-1:0]  s_regs [`REG_COUNT-1:0];
-  logic [`CPU_WIDTH-1:0]  s_mtvec, s_mepc, s_mstatus, s_mcause, s_mcycle, s_mie, s_mip, s_mscratch, s_sstatus;
+  logic [`CPU_WIDTH-1:0]  s_mcause;
   logic                   s_lsu_lsclint, s_wbu_lsclint;
 
   // 2.1 ifu ////////////////////////////////////////////////////////
@@ -131,8 +133,10 @@ module core_top(
     .o_idu_brch     (idu_brch     ),
     .o_idu_bfun3    (idu_bfun3    ),
     .o_idu_pc       (idu_pc       ),
-    .o_idu_ins      (idu_ins      ),
-    .o_idu_nop      (idu_nop      )
+    .o_idu_ecall    (idu_ecall    ),
+    .o_idu_mret     (idu_mret     ),
+    .o_idu_nop      (idu_nop      ),
+    .s_idu_ins      (s_idu_ins    )
   );
 
   // 2.3 exu ///////////////////////////////////////////////
@@ -179,8 +183,10 @@ module core_top(
     .i_idu_csrdid   (idu_csrdid     ),
     .i_idu_csrdwen  (idu_csrdwen    ),
     .i_idu_pc       (idu_pc         ),
-    .i_idu_ins      (idu_ins        ),
+    .i_idu_ecall    (idu_ecall      ),
+    .i_idu_mret     (idu_mret       ),
     .i_idu_nop      (idu_nop        ),
+    .s_idu_ins      (s_idu_ins      ),
     .o_exu_rs2      (exu_rs2        ),
     .o_exu_lsfunc3  (exu_lsfunc3    ),
     .o_exu_lden     (exu_lden       ),
@@ -193,8 +199,10 @@ module core_top(
     .o_exu_csrdwen  (exu_csrdwen    ),
     .o_exu_csrd     (exu_csrd       ),
     .o_exu_pc       (exu_pc         ),
-    .o_exu_ins      (exu_ins        ),
-    .o_exu_nop      (exu_nop        )
+    .o_exu_ecall    (exu_ecall      ),
+    .o_exu_mret     (exu_mret       ),
+    .o_exu_nop      (exu_nop        ),
+    .s_exu_ins      (s_exu_ins      )
   );
 
   // 2.4 lsu ///////////////////////////////////////////////
@@ -229,8 +237,10 @@ module core_top(
     .i_exu_csrdwen (exu_csrdwen   ),
     .i_exu_csrd    (exu_csrd      ),
     .i_exu_pc      (exu_pc        ),
-    .i_exu_ins     (exu_ins       ),
+    .i_exu_ecall   (exu_ecall     ),
+    .i_exu_mret    (exu_mret      ),
     .i_exu_nop     (exu_nop       ),
+    .s_exu_ins     (s_exu_ins     ),
     .i_iru_excp    (iru_excp      ),
     .i_iru_intr    (iru_intr      ),
     .o_clint_ren   (clint_ren     ),
@@ -249,8 +259,10 @@ module core_top(
     .o_lsu_csrdwen (lsu_csrdwen   ),
     .o_lsu_csrd    (lsu_csrd      ),
     .o_lsu_pc      (lsu_pc        ),
-    .o_lsu_ins     (lsu_ins       ),
+    .o_lsu_ecall   (lsu_ecall     ),
+    .o_lsu_mret    (lsu_mret      ),
     .o_lsu_nop     (lsu_nop       ),
+    .s_lsu_ins     (s_lsu_ins     ),
     .s_lsu_lsclint (s_lsu_lsclint ),
     .s_lsu_device  (s_lsu_device  )
   );
@@ -281,9 +293,11 @@ module core_top(
     .i_lsu_csrdwen (lsu_csrdwen  ),
     .i_lsu_csrd    (lsu_csrd     ),
     .i_lsu_pc      (lsu_pc       ),
-    .i_lsu_ins     (lsu_ins      ),
-    .i_iru_intr    (iru_intr     ),
+    .i_lsu_ecall   (lsu_ecall    ),
+    .i_lsu_mret    (lsu_mret     ),
     .i_lsu_nop     (lsu_nop      ),
+    .i_iru_intr    (iru_intr     ),
+    .s_lsu_ins     (s_lsu_ins    ),
     .s_lsu_lsclint (s_lsu_lsclint),
     .s_lsu_device  (s_lsu_device ),
     .o_wbu_rdid    (wbu_rdid     ),
@@ -294,8 +308,10 @@ module core_top(
     .o_wbu_csrd    (wbu_csrd     ),
     .o_wbu_commit  (wbu_commit   ),
     .o_wbu_pc      (wbu_pc       ),
-    .o_wbu_ins     (wbu_ins      ),
+    .o_wbu_ecall   (wbu_ecall    ),
+    .o_wbu_mret    (wbu_mret     ),
     .o_wbu_nop     (wbu_nop      ),
+    .s_wbu_ins     (s_wbu_ins    ),
     .s_wbu_lsclint (s_wbu_lsclint),
     .s_wbu_device  (s_wbu_device )
   );
@@ -315,9 +331,10 @@ module core_top(
   iru u_iru(
     .i_wbu_valid     (wbu_valid       ),
     .i_wbu_ready     (wbu_ready       ),
-    .i_wbu_nop       (wbu_nop         ),
-    .i_wbu_ins       (wbu_ins         ),
     .i_wbu_pc        (wbu_pc          ),
+    .i_wbu_ecall     (wbu_ecall       ),
+    .i_wbu_mret      (wbu_mret        ),
+    .i_wbu_nop       (wbu_nop         ),
     .o_iru_excp      (iru_excp        ),
     .o_iru_intr      (iru_intr        ),
     .o_iru_pc        (iru_pc          ),
@@ -430,9 +447,9 @@ module core_top(
   wire real_commit = wbu_commit & !wbu_nop;
   always @(*) begin
     check_rst(i_rst_n);
-    get_diff_skip(s_wbu_device | iru_intr);
+    get_diff_skip(s_wbu_device | iru_intr | s_wbu_lsclint);
     get_diff_commit(real_commit);
-    check_finsih(wbu_ins,s_a0zero);
+    check_finsih(s_wbu_ins,s_a0zero);
   end
 
   // 3.2 regfile.

@@ -39,7 +39,7 @@ module uni2axi # (
   wire r_state_idle = r_state == R_STATE_IDLE, r_state_addr = r_state == R_STATE_ADDR, r_state_read  = r_state == R_STATE_READ;
 
   // Wirte State Machine
-  always @(posedge i_clk) begin
+  always @(posedge i_clk or negedge i_rst_n) begin
       if (!i_rst_n) begin
           w_state <= W_STATE_IDLE;
       end
@@ -56,7 +56,7 @@ module uni2axi # (
   end
 
   // Read State Machine
-  always @(posedge i_clk) begin
+  always @(posedge i_clk or negedge i_rst_n) begin
       if (!i_rst_n) begin
           r_state <= R_STATE_IDLE;
       end
@@ -74,7 +74,7 @@ module uni2axi # (
 
   // ------------------Number of transmission------------------
   logic [7:0] len, axi_len;
-  always @(posedge i_clk) begin
+  always @(posedge i_clk or negedge i_rst_n) begin
       if (!i_rst_n) begin
           len <= 0;
       end else if ((w_trans & w_state_idle) | (r_trans & r_state_idle)) begin
@@ -111,7 +111,7 @@ module uni2axi # (
   wire [AXI_ID_WIDTH-1:0]   axi_id   = {AXI_ID_WIDTH{1'b0}};
   wire [AXI_USER_WIDTH-1:0] axi_user = {AXI_USER_WIDTH{1'b0}};
 
-  always @(posedge i_clk) begin
+  always @(posedge i_clk or negedge i_rst_n) begin
       if (!i_rst_n) begin
           UniIf_S.ready <= 0;
       end
@@ -165,7 +165,7 @@ module uni2axi # (
   assign AxiIf_M.r_ready    = r_state_read;
 
   for(genvar i=0; i<TRANS_LEN; i=i+1)begin
-    always @(posedge i_clk) begin
+    always @(posedge i_clk or negedge i_rst_n) begin
       if (!i_rst_n) begin
         UniIf_S.rdata[i*AXI_DATA_WIDTH+:AXI_DATA_WIDTH] <= 0;
       end else if (AxiIf_M.r_valid & AxiIf_M.r_ready & (i==len)) begin
