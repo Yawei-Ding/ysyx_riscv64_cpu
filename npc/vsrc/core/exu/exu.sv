@@ -183,24 +183,32 @@ module exu (
   logic [`CPU_WIDTH-1:0] int_res, mul_res, div_res;
 
   // 4.2 generate integer alu result: ////////////////////////////////////////////////////////////////////////////////////////
+  wire [63:0]   add_result  = src1 + src2;
+  wire [63:0]   sub_result  = src1 - src2;
+  wire [127:0]  sra_intern  = {{{64{src1[63]}},src1} >> src2[5:0]};
+  wire [63:0]   sra_result  = sra_intern[63:0];
+  wire [63:0]   slt_result  = {63'b0, sub_result[63]};
+  wire [64:0]   sltu_intern = {1'b0,src1} - {1'b0,src2};
+  wire [63:0]   sltu_result = {63'b0 , sltu_intern[64]};     
+
   always @(*) begin
     alu_int = 1'b1;
     case (idu_exopt_r)
-      `EXU_ADD:   int_res = src1 + src2;
-      `EXU_SUB:   int_res = src1 - src2;
-      `EXU_ADDW:  begin int_res[31:0] = src1[31:0] + src2[31:0];               int_res = {{32{int_res[31]}},int_res[31:0]};end
-      `EXU_SUBW:  begin int_res[31:0] = src1[31:0] - src2[31:0];               int_res = {{32{int_res[31]}},int_res[31:0]};end
+      `EXU_ADD:   int_res = add_result;
+      `EXU_SUB:   int_res = sub_result;
+      `EXU_ADDW:  begin int_res[31:0] = src1[31:0] + src2[31:0];               int_res[63:32] = {32{int_res[31]}};  end
+      `EXU_SUBW:  begin int_res[31:0] = src1[31:0] - src2[31:0];               int_res[63:32] = {32{int_res[31]}};  end
       `EXU_AND:   int_res = src1 & src2;
       `EXU_OR:    int_res = src1 | src2;
       `EXU_XOR:   int_res = src1 ^ src2;
       `EXU_SLL:   int_res = src1 << src2[5:0];
       `EXU_SRL:   int_res = src1 >> src2[5:0];
-      `EXU_SRA:   int_res = {{{64{src1[63]}},src1} >> src2[5:0]}[63:0];
-      `EXU_SLLW:  begin int_res[31:0] = src1[31:0] << src2[4:0];               int_res = {{32{int_res[31]}},int_res[31:0]}; end
-      `EXU_SRLW:  begin int_res[31:0] = src1[31:0] >> src2[4:0];               int_res = {{32{int_res[31]}},int_res[31:0]}; end
-      `EXU_SRAW:  begin int_res = {{32{src1[31]}}, src1[31:0]} >> src2[4:0];   int_res = {{32{int_res[31]}},int_res[31:0]}; end
-      `EXU_SLT:   begin int_res = {63'b0 , {src1 - src2}[63] };                                                             end
-      `EXU_SLTU:  begin int_res = {63'b0 , {{1'b0,src1} - {1'b0,src2}}[64] };                                               end
+      `EXU_SRA:   int_res = sra_result;
+      `EXU_SLLW:  begin int_res[31:0] = src1[31:0] << src2[4:0];               int_res[63:32] = {32{int_res[31]}};  end
+      `EXU_SRLW:  begin int_res[31:0] = src1[31:0] >> src2[4:0];               int_res[63:32] = {32{int_res[31]}};  end
+      `EXU_SRAW:  begin int_res = {{32{src1[31]}}, src1[31:0]} >> src2[4:0];   int_res[63:32] = {32{int_res[31]}};  end
+      `EXU_SLT:   int_res = slt_result;
+      `EXU_SLTU:  int_res = sltu_result;
       default:    begin int_res = `CPU_WIDTH'b0; alu_int = 1'b0; end
     endcase
   end
