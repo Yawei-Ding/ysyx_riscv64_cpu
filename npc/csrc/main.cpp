@@ -62,11 +62,10 @@ int main(int argc, char** argv, char** env) {
       if(rst_n_sync){
         mem.beat(mem_sigs_ref);
         mem_sigs.update_output(mem_ref);
-#ifdef DIFFTEST_ON
         if(diff_commit || diff_skip){
-          // 1. update device;
           device_update();
-          // 2. check last cycle reg status:
+#ifdef DIFFTEST_ON
+          // 1. check last cycle reg status:
           if(diff_skip_r){ //skip write or read device ins.
             diff_cpdutreg2ref();
           }
@@ -76,13 +75,13 @@ int main(int argc, char** argv, char** env) {
               break;
             }
           }
-          // 3. nemu step and update nemu regs/mem:
+          // 2. nemu step and update nemu regs/mem:
           if(!diff_skip){
             difftest_step();
           }
-        }
-        diff_skip_r = diff_skip;
+          diff_skip_r = diff_skip;
 #endif
+        }
       }
     }
     top->eval();

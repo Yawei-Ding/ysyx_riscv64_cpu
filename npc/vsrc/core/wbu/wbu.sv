@@ -21,7 +21,6 @@ module wbu (
   input   logic [`INS_WIDTH-1:0]  i_lsu_ins     ,
   input   logic                   i_iru_intr    ,
   input   logic                   i_lsu_nop     ,
-  input   logic                   i_lsu_fencei  ,
   input   logic                   s_lsu_lsclint ,
   input   logic                   s_lsu_device  ,
 
@@ -41,8 +40,7 @@ module wbu (
 
   // 4 for sim:
   output  logic                   s_wbu_lsclint ,
-  output  logic                   s_wbu_device  ,
-  output  logic                   s_wbu_fencei
+  output  logic                   s_wbu_device
 );
 
   // 1. shake hands to reg pre stage signals:///////////////////////////////////////////////////////////////////
@@ -71,14 +69,14 @@ module wbu (
   logic                   lsu_nop_r    ;
 
   stl_reg #(
-    .WIDTH      (4*`CPU_WIDTH+`REG_ADDRW+`CSR_ADDRW+3+`INS_WIDTH+4),
+    .WIDTH      (4*`CPU_WIDTH+`REG_ADDRW+`CSR_ADDRW+3+`INS_WIDTH+3),
     .RESET_VAL  (0       )
   ) regs(
   	.i_clk      (i_clk   ),
     .i_rst_n    (i_rst_n ),
     .i_wen      (i_flush | pre_sh ),
-    .i_din      (i_flush ? 0 : {i_lsu_exres, i_lsu_lsres, i_lsu_lden, i_lsu_rdid, i_lsu_rdwen, i_lsu_csrdid, i_lsu_csrdwen, i_lsu_csrd, i_lsu_pc, i_lsu_ins, i_lsu_nop, s_lsu_lsclint, s_lsu_device, i_lsu_fencei} ),
-    .o_dout     (              {lsu_exres_r, lsu_lsres_r, lsu_lden_r, lsu_rdid_r, lsu_rdwen_r, lsu_csrdid_r, lsu_csrdwen_r, lsu_csrd_r, lsu_pc_r, lsu_ins_r, lsu_nop_r, s_wbu_lsclint, s_wbu_device, s_wbu_fencei} )
+    .i_din      (i_flush ? 0 : {i_lsu_exres, i_lsu_lsres, i_lsu_lden, i_lsu_rdid, i_lsu_rdwen, i_lsu_csrdid, i_lsu_csrdwen, i_lsu_csrd, i_lsu_pc, i_lsu_ins, i_lsu_nop, s_lsu_lsclint, s_lsu_device} ),
+    .o_dout     (              {lsu_exres_r, lsu_lsres_r, lsu_lden_r, lsu_rdid_r, lsu_rdwen_r, lsu_csrdid_r, lsu_csrdwen_r, lsu_csrd_r, lsu_pc_r, lsu_ins_r, lsu_nop_r, s_wbu_lsclint, s_wbu_device} )
   );
 
   // 2. generate valid signals for post stage://////////////////////////////////////////////////////////////////

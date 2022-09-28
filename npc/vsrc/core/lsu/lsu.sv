@@ -166,6 +166,6 @@ module lsu (
   assign o_lsu_ins     = exu_ins_r    ;
   assign o_lsu_nop     = exu_nop_r    ;
   assign s_lsu_lsclint = ldst_en & en_clint;
-  assign s_lsu_device  = stor_en & !lsu_addr[31];
+  assign s_lsu_device  = ldst_en & !lsu_addr[31];
 
 endmodule
