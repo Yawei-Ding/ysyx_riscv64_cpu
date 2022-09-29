@@ -57,7 +57,7 @@ module div#(
 
   // 3. div:///////////////////////////////////////////////////////////////////////////////////
   logic [WIDTH-1  :0] divisor_r;
-  logic [2*WIDTH-1:0] dividend , dividend_r ;
+  logic [2*WIDTH-1:0] dividend , dividend_r , dividend_r_shift ;
   logic [WIDTH-1  :0] quotient , quotient_r ;
 
   always@(posedge i_clk or negedge i_rst_n)begin
@@ -78,7 +78,8 @@ module div#(
   logic [WIDTH-1:0] div_sub, mask;
   logic sub_positive, sub_negative;
 
-  assign {sub_negative,div_sub} = {dividend_r >> cnt}[WIDTH:0] - {1'b0,divisor_r};
+  assign dividend_r_shift = {dividend_r >> cnt};
+  assign {sub_negative,div_sub} = dividend_r_shift[WIDTH:0] - {1'b0,divisor_r};
   assign sub_positive = ~sub_negative;
 
   assign mask = ~({WIDTH{1'b1}} << cnt); // low bit mask.

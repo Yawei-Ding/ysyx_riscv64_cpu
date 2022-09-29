@@ -41,12 +41,11 @@ module bru (
   assign rs1 = (!i_idu_valid & jalr_rs1id_eq_rdid) ? i_rs1_r : i_rs1;
 
   // 1. generate bjump: ///////////////////////////////////////////////
-  logic bjump;
-  logic supersub_resbit;
-  logic [`CPU_WIDTH-1:0] sub_res;
+  logic bjump, supersub_resbit;
+  logic [`CPU_WIDTH-1:0] sub_res, no_use;
 
   assign sub_res = i_rs1 - i_rs2;
-  assign supersub_resbit = {{1'b0,i_rs1} - {1'b0,i_rs2}}[`CPU_WIDTH];
+  assign {supersub_resbit, no_use} = {1'b0,i_rs1} - {1'b0,i_rs2};
 
   stl_mux_default #(6,3,1) mux_branch (bjump, i_bfun3, 1'b0, {
     `FUNC3_BEQ ,   ~(|sub_res)           ,

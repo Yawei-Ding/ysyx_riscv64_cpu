@@ -193,11 +193,13 @@ module dCache (
   end
 
   // 3.4 update dCacheIf_S signal: ///////////////////////////////////////////////////////////////////////////////////////////
-  logic                   dCacheIf_miss_ready  ;
-  logic [`CPU_WIDTH-1:0]  dCacheIf_miss_rdata  ;
+  logic                     dCacheIf_miss_ready;
+  logic [`CPU_WIDTH-1:0]    dCacheIf_miss_rdata;
+  logic [2*`CPU_WIDTH-1:0]  hit_cacheline_shift;
 
   assign dCacheIf_miss_ready = (dch_state == HIT);
-  assign dCacheIf_miss_rdata = {hit_cacheline >> {offset,3'b0}}[`CPU_WIDTH-1:0];
+  assign hit_cacheline_shift = hit_cacheline >> {offset,3'b0};
+  assign dCacheIf_miss_rdata = hit_cacheline_shift[`CPU_WIDTH-1:0];
 
   // 4. miss, write dirty cacheline to bus, read new cacheline from bus : ///////////////////////////////////////////////////
   assign victimblk_wayid = ~recent[index];
