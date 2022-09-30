@@ -17,7 +17,7 @@ module div#(
 );
 
   // 1. control signal:///////////////////////////////////////////////////////////////////////
-  parameter CNT_W = $clog2(WIDTH);
+  localparam CNT_W = $clog2(WIDTH);
   
   logic [CNT_W-1:0] cnt;
 

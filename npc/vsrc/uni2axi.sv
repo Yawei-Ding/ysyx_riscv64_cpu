@@ -31,8 +31,8 @@ module uni2axi # (
   wire trans_done = w_trans ? b_hs : r_done;
 
   // ------------------State Machine------------------
-  parameter [1:0] W_STATE_IDLE = 2'b00, W_STATE_ADDR = 2'b01, W_STATE_WRITE = 2'b10, W_STATE_RESP = 2'b11;
-  parameter [1:0] R_STATE_IDLE = 2'b00, R_STATE_ADDR = 2'b01, R_STATE_READ  = 2'b10;
+  localparam [1:0] W_STATE_IDLE = 2'b00, W_STATE_ADDR = 2'b01, W_STATE_WRITE = 2'b10, W_STATE_RESP = 2'b11;
+  localparam [1:0] R_STATE_IDLE = 2'b00, R_STATE_ADDR = 2'b01, R_STATE_READ  = 2'b10;
 
   reg [1:0] w_state, r_state;
   wire w_state_idle = w_state == W_STATE_IDLE, w_state_addr = w_state == W_STATE_ADDR, w_state_write = w_state == W_STATE_WRITE, w_state_resp = w_state == W_STATE_RESP;
@@ -85,18 +85,17 @@ module uni2axi # (
   end
 
   // ------------------Process Data------------------
-  parameter TRANS_LEN = UNI_DATA_WIDTH / AXI_DATA_WIDTH;  // 2
+  localparam TRANS_LEN = UNI_DATA_WIDTH / AXI_DATA_WIDTH;  // 2
 
   // for SoC:
-//   wire                      is_uart  = (UniIf_S.addr & {{(`ADR_WIDTH-12){1'b1}},12'b0}) == `UART_BASE_ADDR;
-//   wire [1:0]                offset   = UniIf_S.addr[1:0];
-//   wire [AXI_ADDR_WIDTH-1:0] axi_addr = {{(AXI_ADDR_WIDTH-UNI_ADDR_WIDTH){1'b0}},UniIf_S.addr[UNI_ADDR_WIDTH-1:2], is_uart ? UniIf_S.addr[1:0]: 2'b00}; // for SoC
-//   wire [2:0]                axi_size = {1'b0,UniIf_S.size};;
+  // wire                      is_uart  = (UniIf_S.addr & {{(`ADR_WIDTH-12){1'b1}},12'b0}) == `UART_BASE_ADDR;
+  // wire [AXI_ADDR_WIDTH-1:0] axi_addr = {{(AXI_ADDR_WIDTH-UNI_ADDR_WIDTH){1'b0}},UniIf_S.addr[UNI_ADDR_WIDTH-1:2], is_uart ? UniIf_S.addr[1:0]: 2'b00}; // for SoC
 
   // for soc-simulator: 
-  wire [1:0]                offset   = UniIf_S.addr[1:0];
   wire [AXI_ADDR_WIDTH-1:0] axi_addr = {{(AXI_ADDR_WIDTH-UNI_ADDR_WIDTH){1'b0}},UniIf_S.addr[UNI_ADDR_WIDTH-1:2], 2'b00};
-  wire [2:0]                axi_size = {1'b0,UniIf_S.size};
+
+  wire [1:0] offset   = UniIf_S.addr[1:0];
+  wire [2:0] axi_size = {1'b0,UniIf_S.size};
 
   wire        size_b  = (UniIf_S.size == 2'b00);
   wire        size_h  = (UniIf_S.size == 2'b01);
