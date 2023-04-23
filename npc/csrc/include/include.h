@@ -12,7 +12,7 @@
 
 #define ARRLEN(arr) (int)(sizeof(arr) / sizeof(arr[0]))
 
-#define DIFFTEST_ON  1
+//#define DIFFTEST_ON  1
 //#define DUMPWAVE_ON  1
 
 #define INST_START    0x80000000 // use for difftest reg copy.
